@@ -1,0 +1,22 @@
+bugs
+
+Tracer, ROI in root vs in channel vs outside bug
+next folder did not work
+time scale wrong 
+application change is wrong +1
+does not work without tracer analysis
+....test.csv created in main folder??
+
+declare C1 and C2 in parameters
+
+file pattern name and file extension to look for splitting
+
+deal with raw tif, nd...
+
+Remove tracer and set it as a small module just for us
+
+hide layer once ROI is processed
+
+check sd sem averages of averages
+
+output file from compilation of conditions is completly wrong

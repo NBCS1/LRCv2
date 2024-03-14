@@ -1,0 +1,20 @@
+{
+    "ij_path": "/home/adminelson/Downloads/fiji-linux64/Fiji.app/ImageJ-linux64",
+    "R_HOME": "/usr/lib/R/",
+    "R_LIBS": "/home/adminelson/R/x86_64-pc-linux-gnu-library/4.3/",
+    "parameters": {
+        "median_radius": "10",
+        "max_filter_size": "5",
+        "top_hat_radius": "20",
+        "closing_radius1": "2",
+        "closing_radius2": "15",
+        "dilation_radius1": "15",
+        "dilation_radius2": "3",
+        "erosion_radius": "15",
+        "vmin": "5",
+        "vmedian": "3",
+        "biomedian": "2",
+        "biotophat": "20"
+    },
+    "selected_gpu": "NVIDIA RTX A3000 Laptop GPU"
+}

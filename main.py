@@ -1,0 +1,415 @@
+'''
+
+test function on fluo pi (can wait)
+handle extra cells>ignore new, zero cell >NA
+
+
+normalization base on actual time value of 2 as the time establishement should be an option
+    if czi read it from czi metadata else user choose, defautl =2
+
+Reimplement no tracer
+
+Handle new cells and zero cells
+
+Full test for demo
+
+seg test function >>new parameters for segmeentation
+
+new seg correction module
+
+
+Single frame automation
+: split, napari roi
+
+'''
+
+
+# Standard Library Imports
+import os
+import sys
+
+import subprocess
+import datetime
+import warnings
+from datetime import date
+
+# Third-Party General Purpose Libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import ndimage
+import tifffile
+
+# GUI Libraries
+import PySimpleGUI as sg
+
+
+# Image Processing and Scientific Libraries
+
+import napari
+from skimage.io import imsave
+from skimage.morphology import skeletonize
+#LRC utilities
+from gui.main_window import launch_main_gui,open_parameter_popup
+from gui.napari_roi import napariROI
+from utils import image_analyses, data, plot
+from plantcv.plantcv.morphology import prune
+import pyclesperanto_prototype as cle
+
+#initialization of program dependencies paths
+import json
+
+with open('config.json', 'r') as file:
+    config = json.load(file)
+#Image-J interface
+ij_path = config["ij_path"]
+
+# R Interface Libraries
+os.environ['R_HOME'] = config["R_HOME"]
+os.environ["R_LIBS"] = config["R_LIBS"]
+
+#option parameters
+params1=config["parameters"]
+params=data.process_parameters(data=params1)
+gpu=config["selected_gpu"]
+
+import rpy2.rinterface as rinterface
+import rpy2.robjects as ro
+from rpy2.robjects.packages import importr
+from rpy2.robjects.conversion import localconverter
+from rpy2.robjects import pandas2ri, Formula
+
+lrc_directory=os.getcwd()
+
+#Retrieve date in different formats
+current_date = datetime.date.today()
+date_str = current_date.strftime("%Y %B %d")
+day = current_date.strftime('%Y-%b-%d')
+
+
+version = 5
+global firstfile
+firstfile = True
+compiled_data = None
+file_list = []  # A list to keep track of added files
+plotcompiled = None
+
+from PyQt5.QtWidgets import QApplication  
+
+app = QApplication(sys.argv) 
+# global env variables initialization (related to the single frames statistics)
+stat_export = False
+d1 = None
+test_result = None
+cld_result = None
+
+def main(stat_export=stat_export):
+    window = launch_main_gui(name="LRC: Lipid Ratio calculator v1 beta")
+
+    while True:
+        event, values = window.read()
+
+        if event in (sg.WIN_CLOSED, "Cancel"):#Close window button event
+            window.close()
+            break
+
+        if event == "Split":#Split button event
+            if values["-FOLDER0-"] != "":
+                image_analyses.channel_splitter_czi(window,values["-FOLDER0-"])
+            else:
+                sg.popup_error('Please select a folder first')
+                
+        if event == "3D-Registration":#3D registration button even  
+            ij_path,params,gpu=data.readParameters()
+            cle.select_device(gpu)
+            if values["-FOLDER00-"] != "":
+                folder = values["-FOLDER00-"]
+                list_files = data.find_file_recursive(folder=folder, pattern=".tif")  # look for tif files only
+                list_pattern_avoid = ["Drift-plot", "xyCorrected", "xyzCorrected"]
+                list_fileC1,list_fileC2 = data.filenamesFromPaths(list_files,list_pattern_avoid)
+                if len(list_fileC2) == 0:
+                    sg.popup_error(
+                        'Not C2 channel files detected, run SPLIT first')
+                elif len(list_fileC1) == 0:
+                    sg.popup_error(
+                        'Not C1 channel files detected, run SPLIT first')
+                else:
+                    image_analyses.registration(referenceChannelFiles=sorted(
+                        list_fileC2), applyToFiles=sorted(list_fileC1),ij_path=ij_path,macro_path="fast4Dregheadlessv1.ijm")
+            else:
+                sg.popup_error('Please select a folder first')
+                
+        if event == "Tracer-analysis":
+            if values["-FOLDER000-"] != "":
+                folder = values["-FOLDER000-"]
+                list_files = data.find_file_recursive(folder=folder, pattern=".tif")
+                list_files = data.find_file_recursive(folder=folder, pattern="xyzCorrected.tif")# look for tif files only
+                # extract filenames from full path
+                list_pattern_avoid = ["Drift-plot", "xyCorrected"]
+                list_fileC1,list_fileC2 = data.filenamesFromPaths(list_files,list_pattern_avoid=list_pattern_avoid)
+                if len(list_fileC1) == 0:
+                    sg.popup_error(
+                        'No C1 channel xyzCorrected.tif files detected, run 3D registration first')
+                else:
+                    sg.one_line_progress_meter('Processing Files', 0, len(list_fileC1), 'tracer analysis')
+                    for i, file in enumerate(list_fileC1, 1):  # Start counting from 1
+                        image_analyses.tracerAnalysis(file=file)
+                        
+                        # Update the progress meter
+                        if not sg.one_line_progress_meter('Processing Files', i, len(list_fileC1), 'tracer analysis'):
+                            print('User cancelled')
+                            break
+                        
+                        
+            else:
+                sg.popup_error('Please select a folder first')
+                
+        if event == "Manual ROI selection":#Launch Napari viewer for manual ROI selection
+            if values["-FOLDER0000-"] != "":
+                folder = values["-FOLDER0000-"]
+                list_files = data.find_file_recursive(folder=folder, pattern=".tif")
+                list_files = data.find_file_recursive(folder=folder, pattern="xyzCorrected.tif")# look for tif files only
+                # extract filenames from full path
+                list_pattern_avoid = ["Drift-plot", "xyCorrected"]
+                list_fileC1,list_fileC2 = data.filenamesFromPaths(list_files,list_pattern_avoid)
+                if len(list_fileC1) == 0:
+                    sg.popup_error(
+                        'No C1 channel xyzCorrected.tif files detected, run 3D registration first')
+                elif len(list_fileC2)==0:
+                    sg.popup_error(
+                        'No C2 channel xyzCorrected.tif files detected, run 3D registration first')
+                else:
+                    napariROI(list_fileC2=sorted(list_fileC2), list_fileC1=sorted(list_fileC1),app=app)
+            else:
+                sg.popup_error('Please select a folder first')
+                
+        if event == "Run image processing":###Start movie segmentation
+            ij_path,params,gpu=data.readParameters()
+            cle.select_device(gpu)
+            #process user input
+            if values["erosion"] == "564":
+                erosionfactor = 5
+            elif values["erosion"] == "991":
+                erosionfactor = 1
+            elif values["erosion"] == "604":
+                erosionfactor = 3
+
+            nb_folders_toanalyse=data.folderToAnalyze(values=values)# determine how many folder were specified by user
+           
+            try:
+                for folder_nb in np.arange(1, nb_folders_toanalyse+1, 1):
+                    folder_path = values["-FOLDER"+str(folder_nb)+"-"]
+                    savename = os.path.basename(folder_path)
+                    data.update_console(
+                        window, "-CONSOLE-", f'Analysing folder number {str(folder_nb)}/{str(nb_folders_toanalyse)}')
+
+                    table_mb,table_cyt,cytosol_stack=image_analyses.segmentationMovie( directory = folder_path,
+                                                                                      window=window,
+                                                                                      erosionfactor=erosionfactor,
+                                                                                      values=values,params=params)
+                    os.chdir(lrc_directory)
+                    
+                    ncells, list_frames_tocorrect, list_frames_new_cells, list_frames_no_cells=image_analyses.cellChecker(cytosol_stack=cytosol_stack)
+                    df_ratio=image_analyses.nCellCorrection(list_frames_tocorrect=list_frames_tocorrect,
+                                                   list_frames_new_cells=list_frames_new_cells,
+                                                   list_frames_no_cells=list_frames_no_cells,
+                                                   table_cyt=table_cyt,
+                                                   table_mb=table_mb,
+                                                   window=window,
+                                                   ncells=ncells,
+                                                   cytosol_stack_lenght=len(cytosol_stack))
+                    df_ratio.to_csv(folder_path+"test.csv")
+                    data.adjustTimeTracer(dataframe=df_ratio,
+                                          folder_path=folder_path,
+                                          version=version,
+                                          erosionfactor=erosionfactor,
+                                          date_str=date_str,
+                                          savename=savename)
+                    
+            except Exception as e:
+                data.update_console(
+                    window, "-CONSOLE-", f"An error occurred while processing folder number {folder_nb}: {str(e)}")
+                data.update_console(window, "-CONSOLE-",
+                               "Continuing with the next folder.")
+                os.chdir(lrc_directory)
+
+            data.update_console(window, "-CONSOLE-", "DONE!!")
+            sg.popup_no_frame('Image analysis is done!')
+            os.chdir(lrc_directory)
+            
+        if event == "Run image processing Single frame":
+            ij_path,params,gpu=data.readParameters()
+            cle.select_device(gpu)
+            if values["erosion"] == "564":
+                erosionfactor = 5
+            elif values["erosion"] == "991":
+                erosionfactor = 1
+            elif values["erosion"] == "604":
+                erosionfactor = 3
+
+            biosensor_folder = values["-FOLDER12-"]
+            pi_folder = values["-FOLDER22-"]
+            if biosensor_folder == "" or pi_folder == "":
+                sg.popup_error(
+                    "One the folders required for the analysis is not specified", title="Folder error")
+
+            # retrieve image list
+            biosensor_img = data.find_file(folder=biosensor_folder, pattern=".tif")
+            biosensor_img.sort()
+            # retrieve image pi list
+            pi_img = data.find_file(folder=pi_folder, pattern=".tif")
+            pi_img.sort()
+            # check same number of images and names
+            if len(biosensor_img) != len(pi_img):
+                sg.popup_error(
+                    "Images for biosensor and pi are not matching in numbers", title="file error")
+
+            biosensor_img_base = [os.path.basename(file) for file in biosensor_img]
+            biosensor_img_base = [file.replace(
+                file[0:3], "") for file in biosensor_img_base]
+            biosensor_img_base.sort()
+            pi_img_base = [os.path.basename(file) for file in pi_img]
+            pi_img_base = [file.replace(file[0:3], "") for file in pi_img_base]
+            pi_img_base.sort()
+            
+            output_compare = data.compareList(l1=biosensor_img_base, l2=pi_img_base)
+            if output_compare == "Non equal":
+                sg.popup_error("Image names are not matching", title="file error")
+
+            # process each binome of file one by one
+            i = 0
+            try:
+                for img_pi_path, img_biosensor_path in zip(pi_img,biosensor_img):
+                    img_nb = len(biosensor_img)
+                    data.update_console(
+                        window, "-CONSOLE1-", f'Analysing couple of images number {i+1}/{img_nb}')
+                    image_pi = tifffile.imread(img_pi_path)
+                    image_biosensor = tifffile.imread(img_biosensor_path)
+                    data.update_console(window, "-CONSOLE1-",'generating segmentation')
+
+                    membranes, novacuole, intracellular = image_analyses.segmentation_all(image_pi=image_pi,
+                                                                                          image_biosensor=image_biosensor,
+                                                                                          params=params,
+                                                                                          erosionfactor=erosionfactor)
+                
+                    plot.singleFrameAnalysisDisplay(membranes=membranes,
+                                               novacuole=novacuole,
+                                               intracellular=intracellular,
+                                               window=window)
+ 
+                    data.singleFrameDataMeasures(image_biosensor=image_biosensor,
+                                                 membranes=membranes,
+                                                 intracellular=intracellular,
+                                                 img_pi_path=img_pi_path,
+                                                 img_biosensor_path=img_biosensor_path,
+                                                 day=day)
+                    i += 1
+            except Exception as e:
+                data.update_console(
+                    window, "-CONSOLE1-", f"An error occurred while processing folder number {img_biosensor_path}: {str(e)}")
+                data.update_console(window, "-CONSOLE1-",
+                               "Continuing with the next folder.")
+
+            sg.popup_no_frame('Image analysis is done!')
+        
+        if event in ("Options1", "Options2"):
+            open_parameter_popup()
+
+        if event == "Add":
+            # Extract the file name from the full path
+            file_name = values['File']
+            if file_name.endswith('.csv'):
+                if "results" in file_name:  # movie processesing
+                    datas = data.process_file(file_name)
+                    window['File'].update(value='')
+                    file_name_only = os.path.basename(values['File'])
+                    global file_list
+                    file_list.append(file_name_only)  # Add the file to the list
+                    # Display the file list
+                    window['-CONSOLE2-'].update('\n'.join(file_list))
+                    window['File'].update(value='')  # Clear the file input field
+                    # Handling the data storage based on whether it's the first file or subsequent files
+                    global firstfile
+                    if firstfile:
+                        # z=0
+                        compiled_data = datas
+                        # compiled_data,ite=dfreplace(df=compiled_data,variable="variable",iterator=z)
+                        # z+=ite
+                        firstfile = False
+                    else:
+                        # data,ite=dfreplace(df=data,variable="variable",iterator=z)
+                        # z+=ite
+                        compiled_data = pd.concat([compiled_data, datas], axis=0)
+
+                        compiled_data = compiled_data.reset_index(drop=True)
+                else:  # single frame processing
+                    datas = data.process_file_sf(file_name)
+                    window['File'].update(value='')
+                    file_name_only = os.path.basename(values['File'])
+                    file_list.append(file_name_only)  # Add the file to the list
+                    # Display the file list
+                    window['-CONSOLE2-'].update('\n'.join(file_list))
+                    window['File'].update(value='')  # Clear the file input field
+
+                    if firstfile:
+                        compiled_data = datas
+                        firstfile = False
+                    else:
+                        compiled_data = pd.concat([compiled_data, datas], axis=0)
+                        compiled_data = compiled_data.reset_index(drop=True)
+
+            else:
+                sg.popup_error('Please select a valid CSV file.')
+            
+        if event == 'Clear':
+            window['-FOLDER1-'].update(value='')
+            window['-FOLDER2-'].update(value='')
+            window['-FOLDER3-'].update(value='')
+            window['-FOLDER4-'].update(value='')
+        
+        if event == "Clear list":
+            window['-CONSOLE2-'].update('')
+            window['File'].update(value='')
+            compiled_data=None
+            def clear_file_list():
+                global file_list
+                file_list = []
+            clear_file_list()
+            firstfile=True
+        
+        if event == "Compile":
+            if compiled_data is not None:
+                if "Time" not in compiled_data.columns:  # single frame plotting
+                    plots = plot.plot_data_sf(compiled_data,window=window)
+                    data.get_save_folder(data=compiled_data, plot=plots)
+                    window['-CONSOLE2-'].update('')  # Clear the multiline element
+                    window['File'].update(value='')  # Clear the file input field
+
+                else:  # movies plotting
+                    plots = plot.plot_data(compiled_data,window=window)
+                    data.get_save_folder(data=compiled_data, plot=plots)
+                    window['-CONSOLE2-'].update('')  # Clear the multiline element
+                    window['File'].update(value='')  # Clear the file input field
+                    z = 0
+            else:
+                sg.popup_error("No valid data to process.")
+            file_list = []
+            compiled_data = None
+            
+        if event == "Plot":
+            final_df, plotcompiled = plot.plot_data_compiled(values=values,window=window)
+
+        if event == "Save plot to":
+            if plotcompiled:
+                plot.save_compiled_plot(data=final_df, plot=plotcompiled,stat_export=stat_export)
+            else:
+                sg.popup_error('Plot before saving maybe?')
+        # iterator for number of cells in variable replacement
+
+        if event == "Normalize and plot":
+
+            final_df, plotcompiled = plot.plot_data_compiled_norm(values=values,window=window)
+            
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,20 @@
+name: lrc
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - matplotlib
+  - napari
+  - numpy
+  - ocl-icd-system
+  - pandas
+  - plantcv
+  - pyclesperanto-prototype
+  - pysimplegui
+  - python
+  - rpy2
+  - scikit-image
+  - scipy
+  - seaborn
+  - spyder
+  - tifffile
