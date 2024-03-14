@@ -52,7 +52,7 @@ from skimage.io import imsave
 from skimage.morphology import skeletonize
 #LRC utilities
 from gui.main_window import launch_main_gui,open_parameter_popup
-from gui.napari_roi import napariROI
+from gui.napari_roi import napariROI, napariROI_single
 from utils import image_analyses, data, plot
 from plantcv.plantcv.morphology import prune
 import pyclesperanto_prototype as cle
@@ -237,10 +237,10 @@ def main(stat_export=stat_export):
             data.update_console(window, "-CONSOLE-", "DONE!!")
             sg.popup_no_frame('Image analysis is done!')
             os.chdir(lrc_directory)
-            
+        
         if event == "Run image processing Single frame":
-            ij_path,params,gpu=data.readParameters()
-            cle.select_device(gpu)
+            ij_path,params,gpu=data.readParameters()#read parameters in config file
+            cle.select_device(gpu)#activate selected gpu
             if values["erosion"] == "564":
                 erosionfactor = 5
             elif values["erosion"] == "991":
@@ -255,10 +255,10 @@ def main(stat_export=stat_export):
                     "One the folders required for the analysis is not specified", title="Folder error")
 
             # retrieve image list
-            biosensor_img = data.find_file(folder=biosensor_folder, pattern=".tif")
+            biosensor_img = data.find_file(folder=biosensor_folder, pattern="C1")
             biosensor_img.sort()
             # retrieve image pi list
-            pi_img = data.find_file(folder=pi_folder, pattern=".tif")
+            pi_img = data.find_file(folder=pi_folder, pattern="C2")
             pi_img.sort()
             # check same number of images and names
             if len(biosensor_img) != len(pi_img):
@@ -277,6 +277,29 @@ def main(stat_export=stat_export):
             if output_compare == "Non equal":
                 sg.popup_error("Image names are not matching", title="file error")
 
+            #ROI selection with NAPARI
+            napariROI_single(pi_img,biosensor_img,app)
+            biosensor_img = data.find_file(folder=biosensor_folder, pattern="fluo.tif")
+            biosensor_img.sort()
+            pi_img = data.find_file(folder=pi_folder, pattern="pi.tif")
+            pi_img.sort()
+            if len(biosensor_img) != len(pi_img):
+                sg.popup_error(
+                    "Images for biosensor and pi are not processed?", title="file error")
+
+            biosensor_img_base = [os.path.basename(file) for file in biosensor_img]
+            biosensor_img_base = [file.replace(
+                file[0:3], "") for file in biosensor_img_base]
+            biosensor_img_base.sort()
+            pi_img_base = [os.path.basename(file) for file in pi_img]
+            pi_img_base = [file.replace(file[0:3], "") for file in pi_img_base]
+            pi_img_base.sort()
+            
+            output_compare = data.compareList(l1=biosensor_img_base, l2=pi_img_base)
+            if output_compare == "Non equal":
+                sg.popup_error("Image names are not matching", title="file error")
+            #find processed images 
+            
             # process each binome of file one by one
             i = 0
             try:

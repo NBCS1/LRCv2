@@ -11,10 +11,10 @@
         "dilation_radius1": "15",
         "dilation_radius2": "3",
         "erosion_radius": "15",
-        "vmin": "5",
-        "vmedian": "3",
-        "biomedian": "2",
-        "biotophat": "20"
+        "vmin": "10",
+        "vmedian": "0",
+        "biomedian": "0",
+        "biotophat": "1"
     },
     "selected_gpu": "NVIDIA RTX A3000 Laptop GPU"
 }

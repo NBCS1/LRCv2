@@ -20,3 +20,5 @@ hide layer once ROI is processed
 check sd sem averages of averages
 
 output file from compilation of conditions is completly wrong
+
+original config.json is fucking edited when changing param manually!! add a restore default button

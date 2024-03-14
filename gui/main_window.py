@@ -75,10 +75,12 @@ def open_parameter_popup():
                         "parameters": values,
                         "selected_gpu": selected_gpu
                     }
+                    
                 else:
                     data_to_save = {
                         "parameters": values
                     }
+                print(values)
                 print("Calling append_to_json_file")
                 # Append data to JSON file here
                 file_name = 'config.json'

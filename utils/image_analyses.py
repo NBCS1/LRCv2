@@ -17,7 +17,7 @@ def segmentation_all(image_pi, image_biosensor,erosionfactor, params):
         - endosomes (array): Segmented endosomal regions.
     """
     
-    median_radius, max_filter_size, top_hat_radius, closing_radius1, closing_radius2, dilation_radius1,dilation_radius2, erosion_radius,vmedian,vmin,biomedian,biotophat = params
+    median_radius, max_filter_size, top_hat_radius, closing_radius1, closing_radius2, dilation_radius1,dilation_radius2, erosion_radius,vmin,vmedian,biomedian,biotophat = params
     # Apply segmentation with varying parameters
     denoised_image = cle.median_box(image_pi, radius_x=median_radius, radius_y=median_radius, radius_z=0)
     denoised_image2 = cle.fabs(denoised_image)
@@ -67,9 +67,12 @@ def segmentation_all(image_pi, image_biosensor,erosionfactor, params):
     # 5 for 564, 3 for 604? and 1 for 991
     cyt_one = cle.erode_labels(cyt_one, radius=erosionfactor)
     cyt_one = cle.multiply_images(cyt_one, denoised_image2)
+    '''
     denoised_image3 = cle.top_hat_box(
         cyt_one, radius_x=biotophat, radius_y=biotophat)
-    endosomes = cle.threshold_otsu(denoised_image3)
+    '''
+    denoised_image3=cyt_one
+    endosomes = cle.threshold_otsu(denoised_image3)#denoised image 3
     endosomes = cle.multiply_images(cytcorrected, endosomes)
     return membranes, cytcorrected, endosomes
 
