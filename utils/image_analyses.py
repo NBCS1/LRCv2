@@ -17,7 +17,7 @@ def segmentation_all(image_pi, image_biosensor,erosionfactor, params):
         - endosomes (array): Segmented endosomal regions.
     """
     
-    median_radius, max_filter_size, top_hat_radius, closing_radius1, closing_radius2, dilation_radius1,dilation_radius2, erosion_radius,vmin,vmedian,biomedian,biotophat = params
+    median_radius, max_filter_size, top_hat_radius, closing_radius1, closing_radius2, dilation_radius1,dilation_radius2, erosion_radius,vmin,vmedian,biomedian,biotophat,dontprocess = params
     # Apply segmentation with varying parameters
     denoised_image = cle.median_box(image_pi, radius_x=median_radius, radius_y=median_radius, radius_z=0)
     denoised_image2 = cle.fabs(denoised_image)
@@ -67,11 +67,11 @@ def segmentation_all(image_pi, image_biosensor,erosionfactor, params):
     # 5 for 564, 3 for 604? and 1 for 991
     cyt_one = cle.erode_labels(cyt_one, radius=erosionfactor)
     cyt_one = cle.multiply_images(cyt_one, denoised_image2)
-    '''
-    denoised_image3 = cle.top_hat_box(
-        cyt_one, radius_x=biotophat, radius_y=biotophat)
-    '''
-    denoised_image3=cyt_one
+    if dontprocess=="true":
+        denoised_image3=cyt_one
+    else:
+        denoised_image3 = cle.top_hat_box(
+            cyt_one, radius_x=biotophat, radius_y=biotophat)
     endosomes = cle.threshold_otsu(denoised_image3)#denoised image 3
     endosomes = cle.multiply_images(cytcorrected, endosomes)
     return membranes, cytcorrected, endosomes
@@ -84,7 +84,7 @@ import pyclesperanto_prototype as cle
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 def segmentationMovie(directory,window,erosionfactor,values,params):
     lrc_directory=os.getcwd()
-    median_radius, max_filter_size, top_hat_radius, closing_radius1, closing_radius2, dilation_radius1,dilation_radius2, erosion_radius,vmedian,vmin,biomedian,biotophat = params
+    median_radius, max_filter_size, top_hat_radius, closing_radius1, closing_radius2, dilation_radius1,dilation_radius2, erosion_radius,vmin,vmedian,biomedian,biotophat,dontprocess = params
     os.chdir(directory)
     # Load a time series of TIF files
     image_stack = tifffile.imread('pi.tif')
@@ -161,8 +161,12 @@ def segmentationMovie(directory,window,erosionfactor,values,params):
         # 5 for 564, 3 for 604? and 1 for 991
         cyt_one = cle.erode_labels(cyt_one, radius=erosionfactor)
         cyt_one = cle.multiply_images(cyt_one, denoised_image2)
-        denoised_image3 = cle.top_hat_box(
-            cyt_one, radius_x=biotophat, radius_y=biotophat)
+        
+        if dontprocess=="true":
+            denoised_image3=cyt_one
+        else:
+            denoised_image3 = cle.top_hat_box(
+                cyt_one, radius_x=biotophat, radius_y=biotophat)
         endosomes = cle.threshold_otsu(denoised_image3)
         endosomes = cle.multiply_images(cytcorrected, endosomes)
         endosomes_stack.append(cle.pull(endosomes))
@@ -458,7 +462,7 @@ import os
 from aicspylibczi import CziFile
 import numpy as np
 import tifffile
-def channel_splitter_czi(window,folder):
+def channel_splitter_czi(window,folder,patternfile):
     """
     Splits channels from .czi files in a specified folder and saves them as .tif files.
 
@@ -467,7 +471,7 @@ def channel_splitter_czi(window,folder):
 
     The function performs the following steps:
     1. Searches recursively for .czi files in the specified folder.
-    2. Filters files containing 'Airyscan' in their name.
+    2. Filters files containing 'patternfile' in their name.
     3. Iterates through each .czi file and extracts image data for each channel.
     4. Saves the extracted channel images as .tif files in the same sub-folder.
 
@@ -477,9 +481,16 @@ def channel_splitter_czi(window,folder):
     - The function updates a console element in a GUI window with progress messages.
     """
     czi_files = data.find_file_recursive(folder=folder, pattern=".czi")
-    czi_files = [file for file in czi_files if 'Airyscan' in file]
+    print("found czi files!")
+    print(len(czi_files))
+    if patternfile != "":
+        czi_files = [file for file in czi_files if patternfile in file]
+        print("found file with specified pattern")
+    else:
+        print("no pattern specified, processing all")
+        
     if len(czi_files) == 0:
-        sg.popup_error('No .czi files found in the specified folder')
+        sg.popup_error('No .czi or no files with pattern found in the specified folder')
     else:
         sg.one_line_progress_meter('Processing Files', 0, len(czi_files), 'Channel splitting')
         for i, file in enumerate(czi_files, 1):  # Start counting from 1
@@ -488,21 +499,70 @@ def channel_splitter_czi(window,folder):
             dimensions = czi.get_dims_shape()
             filename = os.path.basename(file)
             data.update_console(window, "-CONSOLE0-", f"processing {filename}")
-            for tile in np.arange(dimensions[0]["S"][1]):
-                data.update_console(window, "-CONSOLE0-",
-                               f"opening {filename} position {tile+1}")
+            if 'S' in dimensions[0]:#Multi tile files
+                print("processing multi tile files")
+                for tile in np.arange(dimensions[0]["S"][1]):
+                    data.update_console(window, "-CONSOLE0-",
+                                   f"opening {filename} position {tile+1}")
+                    for channel in np.arange(dimensions[0]["C"][1]):
+                        data.update_console(
+                            window, "-CONSOLE0-", f"saving {filename} position {tile+1} channel {channel+1}")
+                        img, shp = czi.read_image(S=tile, C=channel)
+                        img = np.squeeze(img)
+                        print(dimensions[0])
+                        
+                        if dimensions[0]["T"][1]>1 and dimensions[0]["Z"][1]>1:
+                            print("dected time and Z")
+                            tifffile.imwrite(
+                                f"{sub_folder}/C{channel + 1}-{filename}#{tile + 1}.tif",
+                                    img, imagej=True, metadata={'axes': 'TZYX'})  # This sets the metadata so that ImageJ knows it's a 3D image)
+                        elif dimensions[0]["T"][1]>1 and dimensions[0]["Z"][1]==1:
+                            print("dected time ")
+                            tifffile.imwrite(
+                                f"{sub_folder}/C{channel + 1}-{filename}#{tile + 1}.tif",
+                                    img, imagej=True, metadata={'axes': 'TYX'}) 
+                        elif dimensions[0]["T"][1]==1 and dimensions[0]["Z"][1]>1:
+                            print("dected Z ")
+                            tifffile.imwrite(
+                                f"{sub_folder}/C{channel + 1}-{filename}#{tile + 1}.tif",
+                                    img, imagej=True, metadata={'axes': 'ZYX'})  
+                        elif dimensions[0]["T"][1]==1 and dimensions[0]["Z"][1]==1:
+                            print("no time no z")
+                            tifffile.imwrite(
+                                f"{sub_folder}/C{channel + 1}-{filename}#{tile + 1}.tif",
+                                    img, imagej=True, metadata={'axes': 'YX'})
+                        
+                            
+            else:#Single tiles files
+                print("processing single tile files")
                 for channel in np.arange(dimensions[0]["C"][1]):
                     data.update_console(
-                        window, "-CONSOLE0-", f"saving {filename} position {tile+1} channel {channel+1}")
-                    img, shp = czi.read_image(S=tile, C=channel)
+                        window, "-CONSOLE0-", f"saving {filename} position channel {channel+1}")
+                    img, shp = czi.read_image(C=channel)
                     img = np.squeeze(img)
-                    tifffile.imwrite(
-                        f"{sub_folder}/C{channel + 1}-{filename}#{tile + 1}.tif",
-                        img, imagej=True, metadata={'axes': 'TZYX'})  # This sets the metadata so that ImageJ knows it's a 3D image)
+                    
+                    if dimensions[0]["T"][1]>1 and dimensions[0]["Z"][1]>1:
+                        tifffile.imwrite(
+                            f"{sub_folder}/C{channel + 1}-{filename}.tif",
+                                img, imagej=True, metadata={'axes': 'TZYX'})  # This sets the metadata so that ImageJ knows it's a 3D image)
+                    elif dimensions[0]["T"][1]>1 and dimensions[0]["Z"][1]==1:
+                        tifffile.imwrite(
+                            f"{sub_folder}/C{channel + 1}-{filename}.tif",
+                                img, imagej=True, metadata={'axes': 'TYX'}) 
+                    elif dimensions[0]["T"][1]==1 and dimensions[0]["Z"][1]>1:
+                        tifffile.imwrite(
+                            f"{sub_folder}/C{channel + 1}-{filename}.tif",
+                                img, imagej=True, metadata={'axes': 'ZYX'})
+                    elif dimensions[0]["T"][1]==1 and dimensions[0]["Z"][1]==1:
+                        tifffile.imwrite(
+                            f"{sub_folder}/C{channel + 1}-{filename}.tif",
+                                img, imagej=True, metadata={'axes': 'YX'})
+                        
             # Update the progress meter
             if not sg.one_line_progress_meter('Processing Files', i, len(czi_files), 'Channel splitting'):
                 print('User cancelled')
                 break
+                
             
 
 import datetime

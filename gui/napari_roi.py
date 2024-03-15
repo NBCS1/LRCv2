@@ -216,10 +216,15 @@ def napariROI_single(list_fileC2,list_fileC1,app):
             processed_frame = np.where(cropped_mask, cropped_frame, 0)
             processed_stack_biosensor.append(processed_frame)
     
-            # Save processed data
-            path_pi = list_fileC2[i] + "_pi.tif"
+            # Save processed data in a new folder "/processed/"
+            image_folder=os.path.dirname(list_fileC2[i])
+            processed_folder=image_folder+"/processed/"
+            if not os.path.exists(processed_folder): 
+                os.makedirs(processed_folder) 
+                
+            path_pi = processed_folder+os.path.basename(list_fileC2[i]) + "_pi.tif"
             tifffile.imwrite(path_pi, processed_stack)
-            path_fluo = list_fileC1[i] + "_fluo.tif"
+            path_fluo = processed_folder+os.path.basename(list_fileC1[i]) + "_fluo.tif"
             tifffile.imwrite(path_fluo, processed_stack_biosensor)
     
             original_shape = "empty"  # Reinitialize shape
@@ -260,12 +265,20 @@ def napariROI_single(list_fileC2,list_fileC1,app):
             nonlocal original_shape
             original_shape="empty"
         
-    
+    @magicgui(call_button="Pass ROI selection process")
+    def passProcessing(viewer: napari.Viewer):
+        def close_viewer_safely():
+            if viewer:
+                viewer.close()
+                QApplication.instance().quit()     
+        QTimer.singleShot(100, close_viewer_safely)
+        return
     # Add the process_roi function as a widget
     container = widgets.Container()
     # Add buttons to the container
     container.append(process_roi)
     container.append(nextMovie)
+    container.append(passProcessing)
     
     # Add the container as a dock widget to the viewer
     viewer.window.add_dock_widget(container, area='right')

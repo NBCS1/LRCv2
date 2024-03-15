@@ -14,7 +14,8 @@
         "vmin": "10",
         "vmedian": "0",
         "biomedian": "0",
-        "biotophat": "1"
+        "biotophat": "1",
+        "dontprocess": true
     },
     "selected_gpu": "NVIDIA RTX A3000 Laptop GPU"
 }

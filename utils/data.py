@@ -89,7 +89,8 @@ def process_parameters(data):
     vmedian = int(data['vmedian'])
     biomedian = int(data['biomedian'])
     biotophat = int(data['biotophat'])
-    parameters=median_radius, max_filter_size, top_hat_radius, closing_radius1, closing_radius2, dilation_radius1,dilation_radius2, erosion_radius,vmin,vmedian,biomedian,biotophat
+    dontprocess=data['dontprocess']
+    parameters=median_radius, max_filter_size, top_hat_radius, closing_radius1, closing_radius2, dilation_radius1,dilation_radius2, erosion_radius,vmin,vmedian,biomedian,biotophat,dontprocess
     return parameters
 
 def adjustTimeTracer(dataframe,folder_path,version,erosionfactor,date_str,savename):

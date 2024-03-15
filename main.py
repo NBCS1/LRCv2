@@ -116,7 +116,7 @@ def main(stat_export=stat_export):
 
         if event == "Split":#Split button event
             if values["-FOLDER0-"] != "":
-                image_analyses.channel_splitter_czi(window,values["-FOLDER0-"])
+                image_analyses.channel_splitter_czi(window,values["-FOLDER0-"],patternfile=values['patternsplit'])
             else:
                 sg.popup_error('Please select a folder first')
                 
@@ -238,79 +238,112 @@ def main(stat_export=stat_export):
             sg.popup_no_frame('Image analysis is done!')
             os.chdir(lrc_directory)
         
+        if event =="Split Channels":
+            print("splitting channels")
+            rawFolder=values["-FOLDER1122-"]#retrieve folder specified by user
+            #check if the folder was specified by user
+            if rawFolder == "":
+                sg.popup_error(
+                    "No folder was specified", title="Folder error")
+            
+            image_analyses.channel_splitter_czi(window,rawFolder,patternfile=values['patternsplit'])
+            
+            
+            
         if event == "Run image processing Single frame":
             ij_path,params,gpu=data.readParameters()#read parameters in config file
             cle.select_device(gpu)#activate selected gpu
+            
+            #retrieve the erosion factor
             if values["erosion"] == "564":
                 erosionfactor = 5
             elif values["erosion"] == "991":
                 erosionfactor = 1
             elif values["erosion"] == "604":
                 erosionfactor = 3
-
+            
+            #retrieve splitted image folder
             biosensor_folder = values["-FOLDER12-"]
-            pi_folder = values["-FOLDER22-"]
-            if biosensor_folder == "" or pi_folder == "":
+            pi_folder = biosensor_folder
+            
+            #check if the folder was specified by user
+            if biosensor_folder == "":
                 sg.popup_error(
-                    "One the folders required for the analysis is not specified", title="Folder error")
+                    "No folder was specified", title="Folder error")
 
-            # retrieve image list
+            # retrieve image list C1 > biosensor
             biosensor_img = data.find_file(folder=biosensor_folder, pattern="C1")
             biosensor_img.sort()
-            # retrieve image pi list
+            
+            # retrieve image list C2 > Pi
             pi_img = data.find_file(folder=pi_folder, pattern="C2")
             pi_img.sort()
-            # check same number of images and names
+            
+            # check same number of images
             if len(biosensor_img) != len(pi_img):
                 sg.popup_error(
                     "Images for biosensor and pi are not matching in numbers", title="file error")
-
-            biosensor_img_base = [os.path.basename(file) for file in biosensor_img]
+                
+            #Check if image have the same name except for the C1 or C2 channel number
+            biosensor_img_base = [os.path.basename(file) for file in biosensor_img]#retrieve images filenames
             biosensor_img_base = [file.replace(
-                file[0:3], "") for file in biosensor_img_base]
-            biosensor_img_base.sort()
-            pi_img_base = [os.path.basename(file) for file in pi_img]
+                file[0:3], "") for file in biosensor_img_base]#Remove C1 or C2 in front
+            biosensor_img_base.sort()#sort image
+            pi_img_base = [os.path.basename(file) for file in pi_img]#Same for PI images
             pi_img_base = [file.replace(file[0:3], "") for file in pi_img_base]
             pi_img_base.sort()
-            
-            output_compare = data.compareList(l1=biosensor_img_base, l2=pi_img_base)
+            output_compare = data.compareList(l1=biosensor_img_base, l2=pi_img_base)#Compare if sorted list have the same names
             if output_compare == "Non equal":
                 sg.popup_error("Image names are not matching", title="file error")
 
-            #ROI selection with NAPARI
+            #ROI selection with NAPARI from the two list
             napariROI_single(pi_img,biosensor_img,app)
-            biosensor_img = data.find_file(folder=biosensor_folder, pattern="fluo.tif")
+            
+            #Retrieve processed images from Napari new folder processed
+            processed_folder=biosensor_folder+"/processed/"
+            biosensor_img = data.find_file(folder=processed_folder, pattern="fluo.tif")
             biosensor_img.sort()
-            pi_img = data.find_file(folder=pi_folder, pattern="pi.tif")
+            pi_img = data.find_file(folder=processed_folder, pattern="pi.tif")
             pi_img.sort()
             if len(biosensor_img) != len(pi_img):
                 sg.popup_error(
                     "Images for biosensor and pi are not processed?", title="file error")
+            print("Same number of fluo and pi images, next")
 
+            #Check if there is files for both pi and fluo and they have the same name except for the channel and -fluo.tif pi.tif
             biosensor_img_base = [os.path.basename(file) for file in biosensor_img]
             biosensor_img_base = [file.replace(
                 file[0:3], "") for file in biosensor_img_base]
+            biosensor_img_base=[file.replace(
+               file[len(file)-9:], "") for file in biosensor_img_base]
             biosensor_img_base.sort()
             pi_img_base = [os.path.basename(file) for file in pi_img]
             pi_img_base = [file.replace(file[0:3], "") for file in pi_img_base]
+            pi_img_base = [file.replace(file[len(file)-7:], "") for file in pi_img_base]
             pi_img_base.sort()
             
             output_compare = data.compareList(l1=biosensor_img_base, l2=pi_img_base)
             if output_compare == "Non equal":
                 sg.popup_error("Image names are not matching", title="file error")
-            #find processed images 
+            
+            print("Binomes of fluo and pi images are good to go!")
             
             # process each binome of file one by one
             i = 0
             try:
+                print("processing images")
                 for img_pi_path, img_biosensor_path in zip(pi_img,biosensor_img):
                     img_nb = len(biosensor_img)
                     data.update_console(
                         window, "-CONSOLE1-", f'Analysing couple of images number {i+1}/{img_nb}')
                     image_pi = tifffile.imread(img_pi_path)
+                    image_pi=image_pi.squeeze()
                     image_biosensor = tifffile.imread(img_biosensor_path)
+                    image_biosensor=image_biosensor.squeeze()
                     data.update_console(window, "-CONSOLE1-",'generating segmentation')
-
+                    print("Images are loaded")
+                    print(image_pi.shape)
+                    print(image_biosensor.shape)
                     membranes, novacuole, intracellular = image_analyses.segmentation_all(image_pi=image_pi,
                                                                                           image_biosensor=image_biosensor,
                                                                                           params=params,

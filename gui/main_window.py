@@ -49,7 +49,8 @@ def open_parameter_popup():
         [sg.Text('VMin'), sg.InputText(str(params[8]), key='vmin')],
         [sg.Text('VMedian'), sg.InputText(str(params[9]), key='vmedian')],
         [sg.Text('BioMedian'), sg.InputText(str(params[10]), key='biomedian')],
-        [sg.Text('BioTopHat'), sg.InputText(str(params[11]), key='biotophat')],
+        [sg.Text('BioTopHat'), sg.InputText(str(params[11]), key='biotophat'),
+         sg.Checkbox("No intensity filter", default=params[12], key='dontprocess')],
         [sg.Button("Select GPU", key='Select GPU')],
         [sg.Submit(), sg.Cancel()]
     ]
@@ -123,6 +124,8 @@ def launch_main_gui(name):
     sg.theme('MyCreatedTheme') 
     layout0 = [[sg.Text("Select folder containing czi files to split (it's recursive):")],
                [sg.Input(key="-FOLDER0-"), sg.FolderBrowse(), sg.Button("Split")],
+               [sg.Text("Input a pattern, otherwise all the .czi files in the specified folder will be splitted",size=(65,1)),
+                sg.Input(key="patternsplit")],
                [sg.Text("Select folder containing splitted channels (it's recursive):")],
                [sg.Input(key="-FOLDER00-"), sg.FolderBrowse(),
                 sg.Button("3D-Registration")],
@@ -163,10 +166,12 @@ def launch_main_gui(name):
     
     layout12 = [
         [sg.Column([
-            [sg.Text("Select a folder containing your biosensor images:", size=(65, 1))],
+            [sg.Text("Select a folder containing your czi files:", size=(65, 1))],
+            [sg.Input(key="-FOLDER1122-"), sg.FolderBrowse(),sg.Button("Split Channels")],
+            [sg.Text("Input a pattern, otherwise all the .czi files in the specified folder will be splitted",size=(65,1)),
+             sg.Input(key="patternsplit")],
+            [sg.Text("Select a folder containing your splitted channel files:", size=(65, 1))],
             [sg.Input(key="-FOLDER12-"), sg.FolderBrowse()],
-            [sg.Text("Select a folder containing your propidium iodide images:")],
-            [sg.Input(key="-FOLDER22-"), sg.FolderBrowse()],
             [sg.Text("Select the line you are analysing"), sg.Combo(
                 ["991", "604", "564"], default_value='991', readonly=True, key="erosion")],
             [sg.Multiline(size=(50, 10), key='-CONSOLE1-',
