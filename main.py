@@ -52,7 +52,7 @@ from skimage.io import imsave
 from skimage.morphology import skeletonize
 #LRC utilities
 from gui.main_window import launch_main_gui,open_parameter_popup
-from gui.napari_roi import napariROI, napariROI_single
+from gui.napari_roi import napariROI, napariROI_single, napariTracer
 from utils import image_analyses, data, plot
 from plantcv.plantcv.morphology import prune
 import pyclesperanto_prototype as cle
@@ -140,30 +140,6 @@ def main(stat_export=stat_export):
             else:
                 sg.popup_error('Please select a folder first')
                 
-        if event == "Tracer-analysis":
-            if values["-FOLDER000-"] != "":
-                folder = values["-FOLDER000-"]
-                list_files = data.find_file_recursive(folder=folder, pattern=".tif")
-                list_files = data.find_file_recursive(folder=folder, pattern="xyzCorrected.tif")# look for tif files only
-                # extract filenames from full path
-                list_pattern_avoid = ["Drift-plot", "xyCorrected"]
-                list_fileC1,list_fileC2 = data.filenamesFromPaths(list_files,list_pattern_avoid=list_pattern_avoid)
-                if len(list_fileC1) == 0:
-                    sg.popup_error(
-                        'No C1 channel xyzCorrected.tif files detected, run 3D registration first')
-                else:
-                    sg.one_line_progress_meter('Processing Files', 0, len(list_fileC1), 'tracer analysis')
-                    for i, file in enumerate(list_fileC1, 1):  # Start counting from 1
-                        image_analyses.tracerAnalysis(file=file)
-                        
-                        # Update the progress meter
-                        if not sg.one_line_progress_meter('Processing Files', i, len(list_fileC1), 'tracer analysis'):
-                            print('User cancelled')
-                            break
-                        
-                        
-            else:
-                sg.popup_error('Please select a folder first')
                 
         if event == "Manual ROI selection":#Launch Napari viewer for manual ROI selection
             if values["-FOLDER0000-"] != "":
@@ -183,6 +159,9 @@ def main(stat_export=stat_export):
                     napariROI(list_fileC2=sorted(list_fileC2), list_fileC1=sorted(list_fileC1),app=app)
             else:
                 sg.popup_error('Please select a folder first')
+            if values["traceranalysis"]:
+                    napariTracer(list_fileC1)
+
                 
         if event == "Run image processing":###Start movie segmentation
             ij_path,params,gpu=data.readParameters()

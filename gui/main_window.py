@@ -131,12 +131,8 @@ def launch_main_gui(name):
                 sg.Button("3D-Registration")],
                [sg.Text(
                    "Select folder containing splitted and stabilized channels (it's recursive):")],
-               [sg.Input(key="-FOLDER000-"), sg.FolderBrowse(),
-                sg.Button("Tracer-analysis")],
-               [sg.Text(
-                   "Select folder containing splitted and stabilized channels (it's recursive):")],
                [sg.Input(key="-FOLDER0000-"), sg.FolderBrowse(),
-                sg.Button("Manual ROI selection")],
+                sg.Button("Manual ROI selection"),sg.Checkbox("Analyse background tracer",key="analysetracer")],
                [sg.Multiline(size=(120, 20), key='-CONSOLE0-',
                              autoscroll=True, disabled=True)]
                ]

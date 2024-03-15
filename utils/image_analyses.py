@@ -667,6 +667,7 @@ def corner_average(image):
 from utils import image_analyses, data, plot
 import pandas as pd
 import matplotlib.pyplot as plt
+
 def tracerAnalysis(file):
     data_im = tifffile.imread(file)  # import full stabilized C1 file
     # Filter out fully black frames before calculating mean Z projection
