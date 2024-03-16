@@ -9,8 +9,6 @@ import shutil
 import json 
 import PySimpleGUI as sg
 
-
-
 def readParameters():
     with open('config.json', 'r') as file:
         config = json.load(file)
@@ -28,8 +26,7 @@ def readParameters():
     return ij_path,params,gpu
 
 
-def jsonProof(config,savepath):
-    
+def jsonProof(config,savepath): 
     # Define the source and destination file paths
     source_file = config
     destination_file = savepath
@@ -101,11 +98,13 @@ def adjustTimeTracer(dataframe,folder_path,version,erosionfactor,date_str,savena
         img_parameters = pd.read_csv(parameters_file[0])
         # retrieve significant change value
         change = img_parameters["Value"][4]+1
-    
-        # modify frame columns
-        dataframe.index = dataframe.index-change
-        dataframe.to_csv(folder_path+'/results-LRC'+str(version) +
-                        '-erode_'+str(erosionfactor)+"-"+date_str+savename+'.csv')
+        if change == "na" or change == "no significant change found":
+            print("user did not required tracer or no significant change was found")
+        else:
+            # modify frame columns
+            dataframe.index = dataframe.index-change
+            dataframe.to_csv(folder_path+'/results-LRC'+str(version) +
+                            '-erode_'+str(erosionfactor)+"-"+date_str+savename+'.csv')
 
 def folderToAnalyze(values):
     nb_folders_toanalyse = 0

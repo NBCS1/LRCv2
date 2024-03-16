@@ -28,6 +28,7 @@ def choose_gpu_popup():
     return None
 import os
 import json
+import sys
 from utils import data
 def open_parameter_popup():
     
@@ -51,7 +52,8 @@ def open_parameter_popup():
         [sg.Text('BioMedian'), sg.InputText(str(params[10]), key='biomedian')],
         [sg.Text('BioTopHat'), sg.InputText(str(params[11]), key='biotophat'),
          sg.Checkbox("No intensity filter", default=params[12], key='dontprocess')],
-        [sg.Button("Select GPU", key='Select GPU')],
+        [sg.Button("Select GPU", key='Select GPU'),sg.Button("Default")],
+        [sg.Input(key="loadparams"),sg.FilesBrowse("Import Parameters"),sg.Button("Load")],
         [sg.Submit(), sg.Cancel()]
     ]
 
@@ -69,6 +71,7 @@ def open_parameter_popup():
             if new_gpu_selection is not None:
                 selected_gpu = new_gpu_selection
                 print("Selected GPU:", selected_gpu)
+                
         elif event == 'Submit':
             if values is not None:
                 if selected_gpu is not None:
@@ -103,6 +106,65 @@ def open_parameter_popup():
                 except IOError as e:
                     print(f"Error writing to {file_name}: {e}")
             break
+        
+        elif event == "Load":
+            fileimport=str(values["loadparams"])
+            file_name = 'config.json'
+            # Open the JSON file
+            with open(fileimport, 'r') as f:
+                datacustom = json.load(f)
+            # Save the modified data 
+            with open(file_name, 'w') as f:
+                json.dump(datacustom, f, indent=4)
+            with open(f'{os.getcwd()}/config.json', 'r') as file:
+                config = json.load(file)
+            params1=config["parameters"]
+            params=data.process_parameters(data=params1)
+            # Update the values in the window from the loaded JSON data
+            popup_window['median_radius'].update(str(params[0]))
+            popup_window['max_filter_size'].update(str(params[1]) )                       
+            popup_window['top_hat_radius'].update(str(params[2]))
+            popup_window['closing_radius1'].update(str(params[3]))
+            popup_window['closing_radius2'].update(str(params[4]) )                       
+            popup_window['dilation_radius1'].update(str(params[5]))
+            popup_window['dilation_radius2'].update(str(params[6]))
+            popup_window['erosion_radius'].update(str(params[7]))                        
+            popup_window['vmin'].update(str(params[8])  )
+            popup_window['vmedian'].update(str(params[9]))
+            popup_window['biomedian'].update(str(params[10]))
+            popup_window['biotophat'].update(str(params[11]))                        
+            popup_window['dontprocess'].update(str(params[12]))
+            popup_window.refresh()
+            
+        elif event == "Default":
+            fileimport="config_default.json"
+            file_name = 'config.json'
+            # Open the JSON file
+            with open(fileimport, 'r') as f:
+                datacustom = json.load(f)
+            # Save the modified data 
+            with open(file_name, 'w') as f:
+                json.dump(datacustom, f, indent=4)
+            with open(f'{os.getcwd()}/config.json', 'r') as file:
+                config = json.load(file)
+            params1=config["parameters"]
+            params=data.process_parameters(data=params1)
+            # Update the values in the window from the loaded JSON data
+            popup_window['median_radius'].update(str(params[0]))
+            popup_window['max_filter_size'].update(str(params[1]) )                       
+            popup_window['top_hat_radius'].update(str(params[2]))
+            popup_window['closing_radius1'].update(str(params[3]))
+            popup_window['closing_radius2'].update(str(params[4]) )                       
+            popup_window['dilation_radius1'].update(str(params[5]))
+            popup_window['dilation_radius2'].update(str(params[6]))
+            popup_window['erosion_radius'].update(str(params[7]))                        
+            popup_window['vmin'].update(str(params[8])  )
+            popup_window['vmedian'].update(str(params[9]))
+            popup_window['biomedian'].update(str(params[10]))
+            popup_window['biotophat'].update(str(params[11]))                        
+            popup_window['dontprocess'].update(str(params[12]))
+            popup_window.refresh()
+            
 
     popup_window.close()
 

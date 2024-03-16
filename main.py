@@ -18,9 +18,6 @@ seg test function >>new parameters for segmeentation
 new seg correction module
 
 
-Single frame automation
-: split, napari roi
-
 '''
 
 

@@ -11,13 +11,11 @@
         "dilation_radius1": "15",
         "dilation_radius2": "3",
         "erosion_radius": "15",
-        "vmin": "5",
-        "vmedian": "2",
-        "biomedian": "2",
-        "biotophat": "20",
-        "dontprocess": true,
-        "loadparams": "/home/adminelson/Documents/FERONIA_RALFs/LipidRatioCalculator-LRC/LipidRatioCalculator/LRCv2/configFrederique.json",
-        "Import Parameters": "/home/adminelson/Documents/FERONIA_RALFs/LipidRatioCalculator-LRC/LipidRatioCalculator/LRCv2/configFrederique.json"
+        "vmin": "10",
+        "vmedian": "0",
+        "biomedian": "0",
+        "biotophat": "1",
+        "dontprocess": true
     },
     "selected_gpu": "NVIDIA RTX A3000 Laptop GPU"
 }
