@@ -670,33 +670,38 @@ import matplotlib.pyplot as plt
 
 def tracerAnalysis(file,path):
     data_im = file  # import full stabilized C1 file
-    # Filter out fully black frames before calculating mean Z projection
-    valid_frames = [frame for frame in data_im if not np.all(frame == 0)]
     
-    # Check if there are valid frames to process
-    if valid_frames:
-        mip_data = np.mean(valid_frames, axis=1)  # mean Z projection on valid frames only
-    else:
-        raise ValueError("All frames are fully black.")
-        
+    mip_data = np.mean(data_im, axis=1)  # mean Z projection on valid frames only
+    mip_data=np.ma.masked_equal(mip_data, 0)
     df = pd.DataFrame(
         {'Timeframe': range(len(mip_data)), 'Corner Average': np.mean(mip_data,axis=(1,2))})
-
+    print("mip_data")
+    print(mip_data)
     # Calculate the first-order difference
     diffs = np.diff(np.mean(mip_data,axis=(1,2)))
-
+    print("diffs")
+    print(diffs)
     # Compute mean and standard deviation of differences
     mean_diff = np.mean(diffs)
     std_diff = np.std(diffs)
 
     # Identify significant changes (more than 2 std_devs from the mean)
     threshold = mean_diff + 3 * std_diff
+    significant_changes=[]
     significant_changes = np.where(np.abs(diffs) > threshold)[0]
-    image_parameters = [f'Number of timeframes:{data_im.shape[0]}',
-                        f'Number of slices:{data_im.shape[1]}',
-                        f'Dimension x:{data_im.shape[2]}',
-                        f'Dimension y:{data_im.shape[3]}',
-                        f'Tracer significant change at frame:{significant_changes[0]}']
+    if significant_changes:
+        image_parameters = [f'Number of timeframes:{data_im.shape[0]}',
+                            f'Number of slices:{data_im.shape[1]}',
+                            f'Dimension x:{data_im.shape[2]}',
+                            f'Dimension y:{data_im.shape[3]}',
+                            f'Tracer significant change at frame:{significant_changes[0]}']
+    else:
+        image_parameters = [f'Number of timeframes:{data_im.shape[0]}',
+                            f'Number of slices:{data_im.shape[1]}',
+                            f'Dimension x:{data_im.shape[2]}',
+                            f'Dimension y:{data_im.shape[3]}',
+                            'Tracer significant change at frame:no significant change found']
+        
     # Split each string into name and value
     split_parameters = [param.split(":") for param in image_parameters]
 
@@ -714,9 +719,13 @@ def tracerAnalysis(file,path):
     ax.plot(np.mean(mip_data,axis=(1,2)), label='Averages')
 
     # Add significant changes
-    for change in significant_changes:
-        ax.axvline(change, color='g', linestyle='--',
-                   label=f'Significant Change at {change}')
+    if significant_changes:
+        for change in significant_changes:
+            ax.axvline(change, color='g', linestyle='--',
+                       label=f'Significant Change at {change}')
+    else:
+            ax.axvline(0, color='g', linestyle='--',
+                       label="No significant changes found")
 
     # Add labels and title
     ax.set_xlabel('Timeframe')

@@ -290,46 +290,25 @@ from utils.image_analyses import tracerAnalysis
 def napariTracer(list_fileC1,app):
     
     image2 = tifffile.imread(list_fileC1[0])
-    viewer = napari.Viewer()
-    viewer.add_image(image2)
-    viewer.add_shapes()
+    viewer2 = napari.Viewer()
+    viewer2.add_image(image2)
+    viewer2.add_shapes()
     original_shape="empty"
     i=0 #increment for root list
     
     
     #Process ROI selection on PI channel
-    @magicgui(call_button="Apply to all frames and slices")
-    def applyShape(shapes_layer: napari.layers.Shapes,viewer: napari.Viewer):
+    @magicgui(call_button="Quantify tracer and Next")
+    def Quantifytracer(shapes_layer: napari.layers.Shapes,viewer2: napari.Viewer):
+        nonlocal i
+        nonlocal original_shape
         if len(shapes_layer.data) == 0:
             warnings.warn("Please select ROI")
             return
         nonlocal original_shape
-        original_shape = shapes_layer.data[0]  # Get the first shape
+        original_shape = viewer2.layers[1].data[0]  # Get the first shape
         print(original_shape)
-        num_timeframes = int(viewer.dims.range[0][1])  # Total timeframes
-        num_z_planes = int(viewer.dims.range[1][1])  # Total Z-planes
         
-        new_shapes = []
-        for t in range(num_timeframes):
-            for z in range(num_z_planes):
-                
-                new_shape = original_shape[0][:, 2:4]
-                # Modify the shape's time and Z indices as needed
-                # This depends on how your shape's coordinates are structured
-                new_shapes.append(new_shape)
-        
-        shapes_layer.add(
-              new_shapes,
-              shape_type='rectangle',
-              edge_width=5,
-              edge_color='coral',
-              face_color='orange'
-            )
-                            
-    @magicgui(call_button="Process ROI")
-    def process_roi(shapes_layer: napari.layers.Shapes, viewer: napari.Viewer):
-        nonlocal original_shape
-        nonlocal i
         try:
             if type(original_shape)==str:
                 warnings.warn("Please select ROI and apply")
@@ -338,7 +317,6 @@ def napariTracer(list_fileC1,app):
                 roi_shape = original_shape[:, 2:4]
             else:
                 roi_shape = original_shape 
-            current_z = viewer.dims.current_step[1]  # Current Z index
     
             # Extract the x and y coordinates from the shape data (assuming they are in the 3rd and 4th columns)
             roi_vertices = roi_shape
@@ -355,7 +333,7 @@ def napariTracer(list_fileC1,app):
             processed_stack = []
 
             # Iterate over all time frames
-            for t_frame in viewer.layers[0].data:
+            for t_frame in viewer2.layers[0].data:
                 # Iterate over all Z slices
                 for z in range(t_frame.shape[0]):
                     # Crop the frame to the bounding box of the ROI
@@ -369,15 +347,13 @@ def napariTracer(list_fileC1,app):
                     
                     # Append the processed frame to the stack
                     processed_stack.append(processed_frame)
-            processed_stack = np.array(processed_stack).reshape(viewer.layers[0].data.shape[0],viewer.layers[0].data.shape[1],cropped_mask.shape[0],cropped_mask.shape[1])
+            processed_stack = np.array(processed_stack).reshape(viewer2.layers[0].data.shape[0],viewer2.layers[0].data.shape[1],cropped_mask.shape[0],cropped_mask.shape[1])
+            print("Stack has been cropped out")
             tracerAnalysis(processed_stack,list_fileC1[i])
             
         except Exception as e:
             warnings.warn(f"An error occurred: {e}")
     
-    @magicgui(call_button="Next")
-    def nextMovie(shapes_layer: napari.layers.Shapes, viewer: napari.Viewer):
-        nonlocal i
         i+=1
         if i > len(list_fileC1)-1:
             warnings.warn("No more movies to process")
@@ -392,29 +368,27 @@ def napariTracer(list_fileC1,app):
                 - The function assumes the presence of a global 'viewer' variable representing the viewer application.
                 - It is designed for use with applications that require explicit termination of the application instance.
                 """
-                if viewer:
-                    viewer.close()
+                if viewer2:
+                    viewer2.close()
                     QApplication.instance().quit()     
             QTimer.singleShot(100, close_viewer_safely)
             return
             
         else:
-            viewer.layers.clear()
+            viewer2.status = "Next movie is loading"
+            viewer2.layers.clear()
             image2 = tifffile.imread(list_fileC1[i])
-            viewer.add_image(image2)
-            viewer.add_shapes()
-            nonlocal original_shape
+            viewer2.add_image(image2)
+            viewer2.add_shapes()
             original_shape="empty"
         
     
     # Add the process_roi function as a widget
     container = widgets.Container()
     # Add buttons to the container
-    container.append(applyShape)
-    container.append(process_roi)
-    container.append(nextMovie)
+    container.append(Quantifytracer)
     
     # Add the container as a dock widget to the viewer
-    viewer.window.add_dock_widget(container, area='right')
-    viewer.show()
+    viewer2.window.add_dock_widget(container, area='right')
+    viewer2.show()
     app.exec_()
