@@ -668,7 +668,7 @@ from utils import image_analyses, data, plot
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def tracerAnalysis(file):
+def tracerAnalysis(file,path):
     data_im = file  # import full stabilized C1 file
     # Filter out fully black frames before calculating mean Z projection
     valid_frames = [frame for frame in data_im if not np.all(frame == 0)]
@@ -701,17 +701,17 @@ def tracerAnalysis(file):
     split_parameters = [param.split(":") for param in image_parameters]
 
     # Create DataFrames and save
-    df.to_csv(f'{file}_tracer_measured.csv')
+    df.to_csv(f'{path}_tracer_measured.csv')
     df_im = pd.DataFrame(split_parameters, columns=[
                          "Parameter", "Value"])
-    df_im.to_csv(f'{file}_parameters.csv')
+    df_im.to_csv(f'{path}_parameters.csv')
 
     # Save tracer plot
     # Create the figure and axes objects
     tracer_figure, ax = plt.subplots(figsize=(10, 6))
 
     # Create the plot on the Axes object
-    ax.plot(corner_avgs, label='Corner Averages')
+    ax.plot(np.mean(mip_data,axis=(1,2)), label='Averages')
 
     # Add significant changes
     for change in significant_changes:
@@ -720,11 +720,25 @@ def tracerAnalysis(file):
 
     # Add labels and title
     ax.set_xlabel('Timeframe')
-    ax.set_ylabel('Corner Average')
-    ax.set_title('Corner Averages Over Time with Significant Changes')
+    ax.set_ylabel('Average')
+    ax.set_title(' Averages Over Time with Significant Changes')
 
     # Add legend
     ax.legend()
 
     # Save the plot
-    tracer_figure.savefig(f'{file}_tracer_averages_plot.png')     
+    tracer_figure.savefig(f'{path}_tracer_averages_plot.png')     
+
+def parameterfile(file,path):
+    data_im = file  # import full stabilized C1 file
+    # Filter out fully black frames before calculating mean Z projection
+    image_parameters = [f'Number of timeframes:{data_im.shape[0]}',
+                        f'Number of slices:{data_im.shape[1]}',
+                        f'Dimension x:{data_im.shape[2]}',
+                        f'Dimension y:{data_im.shape[3]}',
+                        'Tracer significant change at frame:na']
+    # Split each string into name and value
+    split_parameters = [param.split(":") for param in image_parameters]
+    df_im = pd.DataFrame(split_parameters, columns=[
+                         "Parameter", "Value"])
+    df_im.to_csv(f'{path}_parameters.csv')

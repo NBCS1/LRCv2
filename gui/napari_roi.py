@@ -11,7 +11,7 @@ from utils import data
 import os
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication 
-
+from utils.image_analyses import parameterfile
 def napariROI(list_fileC2,list_fileC1,app):
     
     image2 = tifffile.imread(list_fileC2[0])
@@ -110,7 +110,7 @@ def napariROI(list_fileC2,list_fileC1,app):
             tifffile.imwrite(path_pi,processed_stack)
             path_fluo=os.path.dirname(list_fileC1[i])+"/fluo.tif"
             tifffile.imwrite(path_fluo,processed_stack_biosensor)
-            
+            parameterfile(image2,path=list_fileC1[i])
             original_shape="empty" #reinitialize shape
         except Exception as e:
             warnings.warn(f"An error occurred: {e}")
@@ -118,6 +118,7 @@ def napariROI(list_fileC2,list_fileC1,app):
     @magicgui(call_button="Next")
     def nextMovie(shapes_layer: napari.layers.Shapes, viewer: napari.Viewer):
         nonlocal i
+        
         i+=1
         if i > len(list_fileC2)-1:
             warnings.warn("No more movies to process")
@@ -304,14 +305,15 @@ def napariTracer(list_fileC1,app):
             return
         nonlocal original_shape
         original_shape = shapes_layer.data[0]  # Get the first shape
-        
+        print(original_shape)
         num_timeframes = int(viewer.dims.range[0][1])  # Total timeframes
         num_z_planes = int(viewer.dims.range[1][1])  # Total Z-planes
         
         new_shapes = []
         for t in range(num_timeframes):
             for z in range(num_z_planes):
-                new_shape = original_shape.data[0][:, 2:4]
+                
+                new_shape = original_shape[0][:, 2:4]
                 # Modify the shape's time and Z indices as needed
                 # This depends on how your shape's coordinates are structured
                 new_shapes.append(new_shape)
@@ -368,8 +370,7 @@ def napariTracer(list_fileC1,app):
                     # Append the processed frame to the stack
                     processed_stack.append(processed_frame)
             processed_stack = np.array(processed_stack).reshape(viewer.layers[0].data.shape[0],viewer.layers[0].data.shape[1],cropped_mask.shape[0],cropped_mask.shape[1])
-
-            tracerAnalysis(np.array(processed_stack))
+            tracerAnalysis(processed_stack,list_fileC1[i])
             
         except Exception as e:
             warnings.warn(f"An error occurred: {e}")
@@ -399,7 +400,7 @@ def napariTracer(list_fileC1,app):
             
         else:
             viewer.layers.clear()
-            image2 = tifffile.imread(list_fileC2[i])
+            image2 = tifffile.imread(list_fileC1[i])
             viewer.add_image(image2)
             viewer.add_shapes()
             nonlocal original_shape

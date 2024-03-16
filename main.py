@@ -157,10 +157,13 @@ def main(stat_export=stat_export):
                         'No C2 channel xyzCorrected.tif files detected, run 3D registration first')
                 else:
                     napariROI(list_fileC2=sorted(list_fileC2), list_fileC1=sorted(list_fileC1),app=app)
+                    #Check if tracer analysis roi selection was ticked
+                    if values["analysetracer"]:
+                        napariTracer(sorted(list_fileC1),app)
+
             else:
                 sg.popup_error('Please select a folder first')
-            if values["traceranalysis"]:
-                    napariTracer(list_fileC1)
+        
 
                 
         if event == "Run image processing":###Start movie segmentation
