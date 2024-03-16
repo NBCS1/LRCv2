@@ -285,7 +285,7 @@ def napariROI_single(list_fileC2,list_fileC1,app):
     viewer.show()
     app.exec_()
     
-from image_analyses import tracerAnalysis
+from utils.image_analyses import tracerAnalysis
 def napariTracer(list_fileC1,app):
     
     image2 = tifffile.imread(list_fileC1[0])
@@ -349,19 +349,26 @@ def napariTracer(list_fileC1,app):
             # Create a path from the ROI vertices
             path = Path(roi_vertices)
     
-            # Process each frame at the current Z
+            # Process each frame and Z to crop
             processed_stack = []
-            for t_frame in viewer.layers[0].data[:, current_z, :, :]:
-                # Crop the frame to the bounding box of the ROI
-                cropped_frame = t_frame[min_y:max_y,min_x:max_x]
-    
-                # Create a mask for the cropped area
-                cropped_mask = path.contains_points(np.c_[np.mgrid[min_y:max_y, min_x:max_x].reshape(2, -1).T]).reshape(cropped_frame.shape)
-    
-                # Apply the mask to the cropped frame
-                processed_frame = np.where(cropped_mask, cropped_frame, 0)
-                processed_stack.append(processed_frame)
-                
+
+            # Iterate over all time frames
+            for t_frame in viewer.layers[0].data:
+                # Iterate over all Z slices
+                for z in range(t_frame.shape[0]):
+                    # Crop the frame to the bounding box of the ROI
+                    cropped_frame = t_frame[z, min_y:max_y, min_x:max_x]
+            
+                    # Create a mask for the cropped area
+                    cropped_mask = path.contains_points(np.c_[np.mgrid[min_y:max_y, min_x:max_x].reshape(2, -1).T]).reshape(cropped_frame.shape)
+            
+                    # Apply the mask to the cropped frame
+                    processed_frame = np.where(cropped_mask, cropped_frame, 0)
+                    
+                    # Append the processed frame to the stack
+                    processed_stack.append(processed_frame)
+            processed_stack = np.array(processed_stack).reshape(viewer.layers[0].data.shape[0],viewer.layers[0].data.shape[1],cropped_mask.shape[0],cropped_mask.shape[1])
+
             tracerAnalysis(np.array(processed_stack))
             
         except Exception as e:
@@ -371,7 +378,7 @@ def napariTracer(list_fileC1,app):
     def nextMovie(shapes_layer: napari.layers.Shapes, viewer: napari.Viewer):
         nonlocal i
         i+=1
-        if i > len(list_fileC2)-1:
+        if i > len(list_fileC1)-1:
             warnings.warn("No more movies to process")
             container.close()
             def close_viewer_safely():

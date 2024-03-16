@@ -669,7 +669,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 def tracerAnalysis(file):
-    data_im = tifffile.imread(file)  # import full stabilized C1 file
+    data_im = file  # import full stabilized C1 file
     # Filter out fully black frames before calculating mean Z projection
     valid_frames = [frame for frame in data_im if not np.all(frame == 0)]
     
@@ -678,17 +678,12 @@ def tracerAnalysis(file):
         mip_data = np.mean(valid_frames, axis=1)  # mean Z projection on valid frames only
     else:
         raise ValueError("All frames are fully black.")
-    # Loop through each timeframe and calculate the corner averages
-    corner_avgs = []
-    for i in range(mip_data.shape[0]):
-        avg = image_analyses.corner_average(mip_data[i])
-        corner_avgs.append(avg)
-    corner_avgs = np.array(corner_avgs)
+        
     df = pd.DataFrame(
-        {'Timeframe': range(len(corner_avgs)), 'Corner Average': corner_avgs})
+        {'Timeframe': range(len(mip_data)), 'Corner Average': np.mean(mip_data,axis=(1,2))})
 
     # Calculate the first-order difference
-    diffs = np.diff(corner_avgs)
+    diffs = np.diff(np.mean(mip_data,axis=(1,2)))
 
     # Compute mean and standard deviation of differences
     mean_diff = np.mean(diffs)
