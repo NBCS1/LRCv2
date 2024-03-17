@@ -112,6 +112,8 @@ def napariROI(list_fileC2,list_fileC1,app):
             tifffile.imwrite(path_fluo,processed_stack_biosensor)
             parameterfile(image2,path=list_fileC1[i])
             original_shape="empty" #reinitialize shape
+            viewer.layers[0].visible = False
+            viewer.layers[1].visible = False
         except Exception as e:
             warnings.warn(f"An error occurred: {e}")
     
