@@ -103,7 +103,6 @@ def adjustTimeTracer(dataframe,folder_path,version,erosionfactor,date_str,savena
         if change == "na" or change == "no significant change found":
             print("user did not required tracer or no significant change was found")
         else:
-            change=change+1
             # modify frame columns
             dataframe.index = dataframe.index-change
             dataframe.to_csv(folder_path+'/results-LRC'+str(version) +

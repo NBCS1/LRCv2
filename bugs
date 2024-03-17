@@ -16,5 +16,4 @@ check sd sem averages of averages
 
 output file from compilation of conditions is completly wrong
 
-original config.json is fucking edited when changing param manually!! add a restore default button and and import config
 Add pass roi selection in main napari
