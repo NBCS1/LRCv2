@@ -91,16 +91,19 @@ def process_parameters(data):
     return parameters
 
 def adjustTimeTracer(dataframe,folder_path,version,erosionfactor,date_str,savename):
+    print("adjusttracerenter::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
     # correct frame negative/positive or control/treatment according to parameters file
     # open file
     parameters_file=data.find_file(folder_path, "_parameters.csv")
     if parameters_file is not None:
         img_parameters = pd.read_csv(parameters_file[0])
+        print(img_parameters)
         # retrieve significant change value
-        change = img_parameters["Value"][4]+1
+        change = img_parameters["Value"][4]
         if change == "na" or change == "no significant change found":
             print("user did not required tracer or no significant change was found")
         else:
+            change=change+1
             # modify frame columns
             dataframe.index = dataframe.index-change
             dataframe.to_csv(folder_path+'/results-LRC'+str(version) +
