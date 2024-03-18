@@ -304,7 +304,7 @@ def search_pattern_recursive(data, pattern):
     return matches
 
 
-def process_file(file_name):
+def process_file(file_name,timeframeDuration):
     """
     Processes a CSV file to extract and average data from columns matching a specific pattern.
 
@@ -315,7 +315,7 @@ def process_file(file_name):
     1. Reads the CSV file into a DataFrame.
     2. Searches for columns matching the pattern "ratio_mb/cyt".
     3. Averages the data across these columns.
-    4. Creates a time column based on the 'Frames' column, scaled by a factor of 2.
+    4. Creates a time column based on the 'Frames' column, scaled by a factor timeframeDuration.
     5. Combines the time and averaged data into a new DataFrame.
     6. Renames columns appropriately and adds a 'File' column with the file's base name.
 
@@ -339,7 +339,7 @@ def process_file(file_name):
         all_data = all_data[dfRatioCols].mean(axis=1)
         # n_t=len(all_data)
         # time_col=np.arange(0,2*n_t,2)
-        time_col = df["Frames"]*2
+        time_col = df["Frames"]*timeframeDuration
         all_data = pd.concat([time_col, all_data], axis=1)
         all_data = all_data.rename(columns={0: "Average"})
         all_data = all_data.rename(columns={'Frames': 'Time'})

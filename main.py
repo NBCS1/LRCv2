@@ -356,28 +356,37 @@ def main(stat_export=stat_export):
             file_name = values['File']
             if file_name.endswith('.csv'):
                 if "results" in file_name:  # movie processesing
-                    datas = data.process_file(file_name)
-                    window['File'].update(value='')
-                    file_name_only = os.path.basename(values['File'])
-                    global file_list
-                    file_list.append(file_name_only)  # Add the file to the list
-                    # Display the file list
-                    window['-CONSOLE2-'].update('\n'.join(file_list))
-                    window['File'].update(value='')  # Clear the file input field
-                    # Handling the data storage based on whether it's the first file or subsequent files
-                    global firstfile
-                    if firstfile:
-                        # z=0
-                        compiled_data = datas
-                        # compiled_data,ite=dfreplace(df=compiled_data,variable="variable",iterator=z)
-                        # z+=ite
-                        firstfile = False
-                    else:
-                        # data,ite=dfreplace(df=data,variable="variable",iterator=z)
-                        # z+=ite
-                        compiled_data = pd.concat([compiled_data, datas], axis=0)
 
-                        compiled_data = compiled_data.reset_index(drop=True)
+                    try:
+                        timeframeDuration= float(values["timeframeDuration"])
+                        if timeframeDuration==0:
+                            timeframeDuration=1
+                    except ValueError:
+                        sg.popup('Please enter a valid timeframe interval')
+                        window["timeframeDuration"].update('')
+                    else:
+                        datas = data.process_file(file_name,timeframeDuration)
+                        window['File'].update(value='')
+                        file_name_only = os.path.basename(values['File'])
+                        global file_list
+                        file_list.append(file_name_only)  # Add the file to the list
+                        # Display the file list
+                        window['-CONSOLE2-'].update('\n'.join(file_list))
+                        window['File'].update(value='')  # Clear the file input field
+                        # Handling the data storage based on whether it's the first file or subsequent files
+                        global firstfile
+                        if firstfile:
+                            # z=0
+                            compiled_data = datas
+                            # compiled_data,ite=dfreplace(df=compiled_data,variable="variable",iterator=z)
+                            # z+=ite
+                            firstfile = False
+                        else:
+                            # data,ite=dfreplace(df=data,variable="variable",iterator=z)
+                            # z+=ite
+                            compiled_data = pd.concat([compiled_data, datas], axis=0)
+    
+                            compiled_data = compiled_data.reset_index(drop=True)
                 else:  # single frame processing
                     datas = data.process_file_sf(file_name)
                     window['File'].update(value='')

@@ -1,18 +1,13 @@
-bugs
-
-add viewer.status message so that user don't think it frozen	
-
+				bugs
+	
 time scale wrong 
+output file from compilation of conditions is completly wrong	
+	
+				Flexibility		
 
-declare C1 and C2 in parameters
+Time scale in parameters
+compile a whole folder or individual files
 
+declare name of channels C1 and C2 in parameters
 
-
-check sd sem averages of averages
-
-output file from compilation of conditions is completly wrong
-
-name of the dock widget ROI, background...
-
-deal with raw tif, nd...
 

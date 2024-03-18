@@ -243,6 +243,8 @@ def launch_main_gui(name):
     layout2 = [[sg.Text("Select CSV files:")],
                [sg.InputText(key="File"), sg.FileBrowse(
                    file_types=(("CSV Files", "*.csv"),))],
+               [sg.Text("Indicate you timeframe interval in minutes (leave default if singleframes)"),
+               sg.InputText("2",key='timeframeDuration', enable_events=True,size=(4,1))],
                [sg.Button("Add"), sg.Button("Clear list"), sg.Button("Compile")],
                [sg.Multiline(size=(150, 10), key='-CONSOLE2-',
                              autoscroll=True, disabled=True)],
