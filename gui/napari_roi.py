@@ -20,7 +20,7 @@ def napariROI(list_fileC2,list_fileC1,app):
     viewer.add_shapes()
     original_shape="empty"
     i=0 #increment for root list
-    
+    napari.utils.notifications.show_info("Please select a ROI using the Polygon selection")
     
     #Process ROI selection on PI channel
     @magicgui(call_button="Apply to all frames and slices")
@@ -49,9 +49,11 @@ def napariROI(list_fileC2,list_fileC1,app):
               edge_color='coral',
               face_color='orange'
             )
+        napari.utils.notifications.show_info("If the ROI good for you, press Process ROI")
                             
     @magicgui(call_button="Process ROI")
     def process_roi(shapes_layer: napari.layers.Shapes, viewer: napari.Viewer):
+        napari.utils.notifications.show_info("Cropping of movies on both channel on going, please wait, I'm not frozen")
         nonlocal original_shape
         nonlocal i
         try:
@@ -150,15 +152,24 @@ def napariROI(list_fileC2,list_fileC1,app):
             original_shape="empty"
         
     
+    @magicgui(call_button="Pass ROI selection process")
+    def passProcessing(viewer: napari.Viewer):
+        def close_viewer_safely():
+            if viewer:
+                viewer.close()
+                QApplication.instance().quit()     
+        QTimer.singleShot(100, close_viewer_safely)
+        return
     # Add the process_roi function as a widget
     container = widgets.Container()
     # Add buttons to the container
     container.append(applyShape)
     container.append(process_roi)
     container.append(nextMovie)
+    container.append(passProcessing)
     
     # Add the container as a dock widget to the viewer
-    viewer.window.add_dock_widget(container, area='right')
+    viewer.window.add_dock_widget(container, area='right',name="ROI selection")
     viewer.show()
     app.exec_()
     
@@ -284,7 +295,7 @@ def napariROI_single(list_fileC2,list_fileC1,app):
     container.append(passProcessing)
     
     # Add the container as a dock widget to the viewer
-    viewer.window.add_dock_widget(container, area='right')
+    viewer.window.add_dock_widget(container, area='right',name="Single Frame ROI selection")
     viewer.show()
     app.exec_()
     
@@ -391,6 +402,6 @@ def napariTracer(list_fileC1,app):
     container.append(Quantifytracer)
     
     # Add the container as a dock widget to the viewer
-    viewer2.window.add_dock_widget(container, area='right')
+    viewer2.window.add_dock_widget(container, area='right',name="Background selection")
     viewer2.show()
     app.exec_()
