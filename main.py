@@ -4,16 +4,7 @@ test function on fluo pi (can wait)
 handle extra cells>ignore new, zero cell >NA
 
 
-normalization base on actual time value of 2 as the time establishement should be an option
-    if czi read it from czi metadata else user choose, defautl =2
-
-Reimplement no tracer
-
 Handle new cells and zero cells
-
-Full test for demo
-
-seg test function >>new parameters for segmeentation
 
 new seg correction module
 
