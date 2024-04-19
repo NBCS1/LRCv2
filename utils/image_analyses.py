@@ -1,3 +1,58 @@
+import os
+from data import filenamesFromPaths,find_file
+import tifffile
+import re
+def testImage(imagesPath,erosionfactor):
+    """Function to test and found the margin for filters values to apply to a set of data
+    Parameters:
+        imageC1: tif image of the biosensor
+        imageC2: tif image of the PI or membrane staining
+    Return a multi columns image presenting 4 different set of filter values for both images
+    Save it in the dedicated folder
+    """
+    #Import from path
+    path=os.path.dirname(imagesPath)#found path
+    imageName=os.path.basename(imagesPath)#found filename
+    imageNameNoChannel=imageName[3:]
+    tifpositions=re.search(".tif",imageNameNoChannel)
+    postion1=tifpositions.span()[0]
+    imageNameNoChannel=imageNameNoChannel[:postion1+4]
+    #Retrieve filepath of C1 and C2
+    list_files=find_file(folder=path,pattern=imageNameNoChannel)
+    list_pattern_avoid=[]
+    imgpathC1,imgpathC2=filenamesFromPaths(list_files,list_pattern_avoid)
+    
+    #Open C1 and C2
+    imgC1 = tifffile.imread(imgpathC1,key=0)
+    imgC2 = tifffile.imread(imgpathC2,key=0)
+    
+    
+    #Set 1 gentle for beautiful PI staining
+    param1=10,5,20,2,15,15,3,15,5,2,2,20,"true"
+    membranes1, cytcorrected1, endosomes1=segmentation_all(image_pi=imgC2, image_biosensor=imgC1, erosionfactor=erosionfactor, params=param1)
+    
+    #Set 2 Middle (mine)
+    param2=10,5,20,2,15,15,3,15,5,2,2,20,"true"
+    membranes2, cytcorrected2, endosomes2=segmentation_all(image_pi=imgC2, image_biosensor=imgC1, erosionfactor=erosionfactor, params=param2)    
+    
+    #Set 3 Hardcore when staining is quite bad
+    param3=10,5,20,2,15,15,3,15,5,2,2,20,"true"
+    membranes3, cytcorrected3, endosomes3=segmentation_all(image_pi=imgC2, image_biosensor=imgC1, erosionfactor=erosionfactor, params=param3)   
+
+    #Set 4 gentle no cytosolic treatment
+    param4=10,5,20,2,15,15,3,15,5,2,2,20,"false"
+    membranes4, cytcorrected4, endosomes4= segmentation_all(image_pi=imgC2, image_biosensor=imgC1, erosionfactor=erosionfactor, params=param4)   
+    
+    #Set 5 middle no cytosolic treatment
+    param5=10,5,20,2,15,15,3,15,5,2,2,20,"false"
+    membranes5, cytcorrected5, endosomes5=segmentation_all(image_pi=imgC2, image_biosensor=imgC1, erosionfactor=erosionfactor, params=param5)   
+    
+    #Set 6 hardcore no cytosolic treatment
+    param6=10,5,20,2,15,15,3,15,10,0,0,1,"false"
+    membranes6, cytcorrected6, endosomes6=segmentation_all(image_pi=imgC2, image_biosensor=imgC1, erosionfactor=erosionfactor, params=param6)   
+       
+    #return figure and save it
+    
 from utils import data, plot
 def segmentation_all(image_pi, image_biosensor,erosionfactor, params):
     """

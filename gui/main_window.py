@@ -195,6 +195,9 @@ def launch_main_gui(name):
                    "Select folder containing splitted and stabilized channels (it's recursive):")],
                [sg.Input(key="-FOLDER0000-"), sg.FolderBrowse(),
                 sg.Button("Manual ROI selection"),sg.Checkbox("Analyse background tracer",key="analysetracer")],
+               [sg.Text(
+                   "Select a cropped tif file to test image analyse on (optional)")],
+               [sg.Input(key="-TESTFILE-"),sg.FileBrowse(file_types=(("cropped tif Files", "*.tif"),)),sg.Button("TEST")],
                [sg.Multiline(size=(120, 20), key='-CONSOLE0-',
                              autoscroll=True, disabled=True)]
                ]
