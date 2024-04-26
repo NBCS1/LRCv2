@@ -9,6 +9,37 @@ import shutil
 import json 
 import PySimpleGUI as sg
 
+def createTestJson(testParams,path):
+    ij_path,params,gpu=readParameters()
+    data = {
+    "ij_path": ij_path,
+    "R_HOME": "/usr/lib/R/",
+    "R_LIBS": "/home/adminelson/R/x86_64-pc-linux-gnu-library/4.3/",
+    "parameters": {
+        "median_radius": str(int(testParams[0])),
+        "max_filter_size": str(int(testParams[1])),
+        "top_hat_radius": str(int(testParams[2])),
+        "closing_radius1": str(int(testParams[3])),
+        "closing_radius2": str(int(testParams[4])),
+        "dilation_radius1": str(int(testParams[5])),
+        "dilation_radius2": str(int(testParams[6])),
+        "erosion_radius": str(int(testParams[7])),
+        "vmin": str(int(testParams[8])),
+        "vmedian": str(int(testParams[9])),
+        "biomedian": str(int(testParams[10])),
+        "biotophat": str(int(testParams[11])),
+        "dontprocess": testParams[12]
+    },
+    "selected_gpu": gpu
+    }
+    
+    # Specify the file path where you want to save the JSON
+    file_path = path
+    
+    # Save JSON to file
+    with open(file_path, "w") as json_file:
+        json.dump(data, json_file, indent=4)
+    
 def readParameters():
     with open('config.json', 'r') as file:
         config = json.load(file)

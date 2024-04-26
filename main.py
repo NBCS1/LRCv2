@@ -445,6 +445,23 @@ def main(stat_export=stat_export):
         if event == "Normalize and plot":
 
             final_df, plotcompiled = plot.plot_data_compiled_norm(values=values,window=window)
+        
+        if event == "Run test":
+            from utils.image_analyses import testImage
+            imagesPath=values["ImageTest"]
+            erosionfactortest=values["-erosionfactorSlider-"]
+            testParams=(values['-medianSlider-'],values['-maxSlider-'],values['-tophatSlider-'],values['-cr1Slider-'],
+                              values['-cr2Slider-'],values['-dilate1Slider-'],values['-dilate2Slider-'],values['-erosionSlider-'],
+                              values['-vminSlider-'],values['-vmedianSlider-'],values['-biomedianSlider-'],values['-biotophatSlider-'],
+                              values['processornot'])
+            fig=testImage(imagesPath,testParams,erosionfactortest,window)
+        
+        if event == "Save figure and config file":
+            from utils.data import createTestJson
+            pathtest=os.path.dirname(imagesPath)
+            fig.savefig(pathtest+'/test'+str(testParams)+'.png')
+            createTestJson(testParams=testParams,path=pathtest+'/custom_config.json')
+            
             
 if __name__ == "__main__":
     main()

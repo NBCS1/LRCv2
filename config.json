@@ -15,9 +15,7 @@
         "vmedian": "2",
         "biomedian": "2",
         "biotophat": "20",
-        "dontprocess": true,
-        "loadparams": "/home/adminelson/Documents/FERONIA_RALFs/LipidRatioCalculator-LRC/LipidRatioCalculator/LRCv2/configFrederique.json",
-        "Import Parameters": "/home/adminelson/Documents/FERONIA_RALFs/LipidRatioCalculator-LRC/LipidRatioCalculator/LRCv2/configFrederique.json"
+        "dontprocess": false
     },
     "selected_gpu": "NVIDIA RTX A3000 Laptop GPU"
 }

@@ -266,16 +266,83 @@ def launch_main_gui(name):
                [sg.Checkbox('Non parametric statistics using R nparcomp functions (single frame only)', default=False,key="statsbox")],
                [sg.Button("Plot"), sg.Button("Save plot to"), sg.Button("Normalize and plot")]]
     
+    layoutTest = [[sg.Canvas(key='-CANVAS5-')],#Plot window
+                  [sg.InputText(key="ImageTest"), sg.FileBrowse(file_types=(
+                      ("tif Files", "*.tif"),))],#Import file path
+                  
+                  [sg.Text("----------------Membrane mask segmentation----------------")],
+                  
+                  [sg.Text("Denoising strenght (Median filter radius)"),
+                  sg.Slider(range=(1, 20), default_value=10, enable_events=True,
+                             orientation='horizontal', key='-medianSlider-')],#Slider for Median filter
+                  
+                  [sg.Text("Max signal extraction (Max filter size)"),
+                  sg.Slider(range=(1, 10), default_value=5, enable_events=True,
+                             orientation='horizontal', key='-maxSlider-')],#Slider for Max filter
+                  
+                  [sg.Text("Enhance bright structures (Top Hat radius)"),
+                  sg.Slider(range=(1, 30), default_value=20, enable_events=True,
+                             orientation='horizontal', key='-tophatSlider-')],#Slider for tophat filter
+                  
+                  [sg.Text("Removing small structures (Closing radius1)"),
+                  sg.Slider(range=(1, 5), default_value=2, enable_events=True,
+                             orientation='horizontal', key='-cr1Slider-')],#Slider for Closing filter
+                  
+                  [sg.Text("Removing small structures after skeletonization of membranes (Closing radius2)"),
+                  sg.Slider(range=(1, 20), default_value=10, enable_events=True,
+                             orientation='horizontal', key='-cr2Slider-')],#Slider for closing filter
+                  
+                  [sg.Text("Dilate membrane signal (Dilatation radius1)"),
+                  sg.Slider(range=(1, 30), default_value=15, enable_events=True,
+                             orientation='horizontal', key='-dilate1Slider-')],#Slider for dilation filter   
+                  
+                  [sg.Text("Dilate membrane signal after skeletonization of membranes (Dilatation radius2)"),
+                  sg.Slider(range=(1, 5), default_value=3, enable_events=True,
+                             orientation='horizontal', key='-dilate2Slider-')],#Slider for dilation filter 
+                  
+                  [sg.Text("Erode first skeleton (erosion radius)"),
+                  sg.Slider(range=(1, 20), default_value=15, enable_events=True,
+                             orientation='horizontal', key='-erosionSlider-')],#Slider for dilation filter 
+                  
+                  [sg.Text("----------------Vacuole removal from biosensor----------------")],
+                  
+                  [sg.Text("Minimum filter for vacuole removal (vmin radius)"),
+                  sg.Slider(range=(1, 10), default_value=5, enable_events=True,
+                             orientation='horizontal', key='-vminSlider-')],#Slider for dilation filter 
+                  
+                  [sg.Text("Median noise filter for vacuole removal (vmedian radius)"),
+                  sg.Slider(range=(1, 10), default_value=2, enable_events=True,
+                             orientation='horizontal', key='-vmedianSlider-')],#Slider for dilation filter 
+                  
+                  [sg.Text("----------------Biosensor high signal fitlering----------------"),
+                  sg.Checkbox("No intensity filter", default=False, key='processornot')],
+                  [sg.Text("Noise filtering for sensor with no vacuole signal (biomedian radius)"),
+                  sg.Slider(range=(1, 10), default_value=2, enable_events=True,
+                             orientation='horizontal', key='-biomedianSlider-')],#Slider for dilation filter 
+                  
+                  [sg.Text("Isolate high brightness structures (biotophat radius)"),
+                  sg.Slider(range=(1, 30), default_value=20, enable_events=True,
+                             orientation='horizontal', key='-biotophatSlider-')],#Slider for dilation filter 
+                  [sg.Text("Remove signal close to the membrane (erosion factor radius)"),
+                  sg.Slider(range=(1, 5), default_value=1, enable_events=True,
+                             orientation='horizontal', key='-erosionfactorSlider-')],#Slider for dilation filter 
+                  
+                  [sg.Button("Run test"),sg.Button("Save figure and config file")]
+                  
+                  
+        ]
+    
     # Create tabs
     tab0 = sg.Tab("Image preprocessing", layout0)
     tab1 = sg.Tab("Image analysis", layout1)
     tab12 = sg.Tab("Image analysis single frames", layout12)
     tab2 = sg.Tab("Data compilation", layout2)
     tab3 = sg.Tab("Plotting", layout3)
+    tab4= sg.Tab("Test filters",layoutTest)
     
     # Combine tabs into a TabGroup
     layout = [
-        [sg.TabGroup([[tab0, tab1, tab12, tab2, tab3]])],
+        [sg.TabGroup([[tab0, tab1, tab12, tab2, tab3, tab4]])],
     ]
     
     window = sg.Window(name, icon="icon.png", layout=layout)

@@ -212,6 +212,27 @@ def singleFrameAnalysisDisplay(membranes, novacuole, intracellular,window):
         item.destroy()
     draw_figure(window['-CANVAS1-'].TKCanvas, fig)
     window.refresh()
+
+def testDisplay(membranes, novacuole, intracellular,window):
+    fig, ax1 = plt.subplots(nrows=1, ncols=1)
+
+    # Display images
+    ax1.imshow(np.hstack((membranes, novacuole, intracellular)))
+
+    ax1.set_axis_off()
+    ax1.set_xticks([])
+    ax1.set_yticks([])
+    ax1.set_frame_on(False)
+    plt.subplots_adjust(wspace=0, hspace=0,
+                        left=0, right=1, bottom=0, top=1)
+    plt.show()
+
+    for item in window['-CANVAS5-'].TKCanvas.pack_slaves():
+        item.destroy()
+    draw_figure(window['-CANVAS5-'].TKCanvas, fig)
+    window.refresh()
+    return fig
+
     
 def plot_data_compiled(values,window):
     """
