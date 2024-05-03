@@ -35,23 +35,23 @@ def open_parameter_popup():
     with open(f'{os.getcwd()}/config.json', 'r') as file:
         config = json.load(file)
     #option parameters
-    params1=config["parameters"]
-    params=data.process_parameters(data=params1)
+    params=config["parameters"]
     popup_layout = [
         [sg.Text('Enter the values:')],
-        [sg.Text('Median Radius'), sg.InputText(str(params[0]), key='median_radius')],
-        [sg.Text('Max Filter Size'), sg.InputText(str(params[1]), key='max_filter_size')],
-        [sg.Text('Top Hat Radius'), sg.InputText(str(params[2]), key='top_hat_radius')],
-        [sg.Text('Closing Radius 1'), sg.InputText(str(params[3]), key='closing_radius1')],
-        [sg.Text('Closing Radius 2'), sg.InputText(str(params[4]), key='closing_radius2')],
-        [sg.Text('Dilation Radius 1'), sg.InputText(str(params[5]), key='dilation_radius1')],
-        [sg.Text('Dilation Radius 2'), sg.InputText(str(params[6]), key='dilation_radius2')],
-        [sg.Text('Erosion Radius'), sg.InputText(str(params[7]), key='erosion_radius')],
-        [sg.Text('VMin'), sg.InputText(str(params[8]), key='vmin')],
-        [sg.Text('VMedian'), sg.InputText(str(params[9]), key='vmedian')],
-        [sg.Text('BioMedian'), sg.InputText(str(params[10]), key='biomedian')],
-        [sg.Text('BioTopHat'), sg.InputText(str(params[11]), key='biotophat'),
-         sg.Checkbox("No intensity filter", default=params[12], key='dontprocess')],
+        [sg.Text('Median Radius'), sg.Input(params["median_radius"], key='median_radius')],
+        [sg.Text('Max Filter Size'), sg.Input(params['max_filter_size'], key='max_filter_size')],
+        [sg.Text('Top Hat Radius'), sg.Input(params['top_hat_radius'], key='top_hat_radius')],
+        [sg.Text('Closing Radius 1'), sg.Input(params["closing_radius1"], key='closing_radius1')],
+        [sg.Text('Closing Radius 2'), sg.Input(params["closing_radius2"], key='closing_radius2')],
+        [sg.Text('Dilation Radius 1'), sg.Input(params['dilation_radius1'], key='dilation_radius1')],
+        [sg.Text('Dilation Radius 2'), sg.Input(params['dilation_radius2'], key='dilation_radius2')],
+        [sg.Text('Erosion Radius'), sg.Input(params["erosion_radius"], key='erosion_radius')],
+        [sg.Text('Threshold for vacuoles and background'), sg.Combo(["Otsu Threshold", "Median Threshold"], default_value="Otsu Threshold", key='thresholdtype')],
+        [sg.Text('VMin'), sg.Input(params["vmin"], key='vmin')],
+        [sg.Text('VMedian'), sg.Input(params["vmedian"], key='vmedian')],
+        [sg.Text('BioMedian'), sg.Input(params["biomedian"], key='biomedian')],
+        [sg.Text('BioTopHat'), sg.Input(params["biotophat"], key='biotophat'),
+         sg.Checkbox("No intensity filter", default=params["dontprocess"], key='dontprocess')],
         [sg.Button("Select GPU", key='Select GPU'),sg.Button("Default")],
         [sg.Input(key="loadparams"),sg.FilesBrowse("Import Parameters"),sg.Button("Load")],
         [sg.Submit(), sg.Cancel()]
@@ -74,6 +74,15 @@ def open_parameter_popup():
                 
         elif event == 'Submit':
             if values is not None:
+                # Convert numeric values to integers
+                for key, value in values.items():
+                    if isinstance(value, str):
+                        try:
+                            # Attempt to convert to integer
+                            values[key] = int(value)
+                        except ValueError:
+                            # Handle non-integer values
+                            pass
                 if selected_gpu is not None:
                     data_to_save = {
                         "parameters": values,
@@ -106,7 +115,7 @@ def open_parameter_popup():
                 except IOError as e:
                     print(f"Error writing to {file_name}: {e}")
             break
-        
+        #Implement a loop an maybe number stuff
         elif event == "Load":
             fileimport=str(values["loadparams"])
             file_name = 'config.json'
@@ -118,22 +127,10 @@ def open_parameter_popup():
                 json.dump(datacustom, f, indent=4)
             with open(f'{os.getcwd()}/config.json', 'r') as file:
                 config = json.load(file)
-            params1=config["parameters"]
-            params=data.process_parameters(data=params1)
+            params=config["parameters"]
             # Update the values in the window from the loaded JSON data
-            popup_window['median_radius'].update(str(params[0]))
-            popup_window['max_filter_size'].update(str(params[1]) )                       
-            popup_window['top_hat_radius'].update(str(params[2]))
-            popup_window['closing_radius1'].update(str(params[3]))
-            popup_window['closing_radius2'].update(str(params[4]) )                       
-            popup_window['dilation_radius1'].update(str(params[5]))
-            popup_window['dilation_radius2'].update(str(params[6]))
-            popup_window['erosion_radius'].update(str(params[7]))                        
-            popup_window['vmin'].update(str(params[8])  )
-            popup_window['vmedian'].update(str(params[9]))
-            popup_window['biomedian'].update(str(params[10]))
-            popup_window['biotophat'].update(str(params[11]))                        
-            popup_window['dontprocess'].update(str(params[12]))
+            for param in list(params.keys()):
+                popup_window[param].update(params[param])
             popup_window.refresh()
             
         elif event == "Default":
@@ -147,24 +144,12 @@ def open_parameter_popup():
                 json.dump(datacustom, f, indent=4)
             with open(f'{os.getcwd()}/config.json', 'r') as file:
                 config = json.load(file)
-            params1=config["parameters"]
-            params=data.process_parameters(data=params1)
+            params=config["parameters"]
             # Update the values in the window from the loaded JSON data
-            popup_window['median_radius'].update(str(params[0]))
-            popup_window['max_filter_size'].update(str(params[1]) )                       
-            popup_window['top_hat_radius'].update(str(params[2]))
-            popup_window['closing_radius1'].update(str(params[3]))
-            popup_window['closing_radius2'].update(str(params[4]) )                       
-            popup_window['dilation_radius1'].update(str(params[5]))
-            popup_window['dilation_radius2'].update(str(params[6]))
-            popup_window['erosion_radius'].update(str(params[7]))                        
-            popup_window['vmin'].update(str(params[8])  )
-            popup_window['vmedian'].update(str(params[9]))
-            popup_window['biomedian'].update(str(params[10]))
-            popup_window['biotophat'].update(str(params[11]))                        
-            popup_window['dontprocess'].update(str(params[12]))
+            for param in list(params.keys()):
+                popup_window[param].update(params[param])
             popup_window.refresh()
-            
+
 
     popup_window.close()
 
@@ -195,9 +180,6 @@ def launch_main_gui(name):
                    "Select folder containing splitted and stabilized channels (it's recursive):")],
                [sg.Input(key="-FOLDER0000-"), sg.FolderBrowse(),
                 sg.Button("Manual ROI selection"),sg.Checkbox("Analyse background tracer",key="analysetracer")],
-               [sg.Text(
-                   "Select a cropped tif file to test image analyse on (optional)")],
-               [sg.Input(key="-TESTFILE-"),sg.FileBrowse(file_types=(("cropped tif Files", "*.tif"),)),sg.Button("TEST")],
                [sg.Multiline(size=(120, 20), key='-CONSOLE0-',
                              autoscroll=True, disabled=True)]
                ]
@@ -305,7 +287,7 @@ def launch_main_gui(name):
                              orientation='horizontal', key='-erosionSlider-')],#Slider for dilation filter 
                   
                   [sg.Text("----------------Vacuole removal from biosensor----------------")],
-                  
+                  [sg.Text('Threshold for vacuoles and background'), sg.Combo(["Otsu Threshold", "Median Threshold"], default_value="Otsu Threshold", key='-thresholdtype-')],
                   [sg.Text("Minimum filter for vacuole removal (vmin radius)"),
                   sg.Slider(range=(1, 10), default_value=5, enable_events=True,
                              orientation='horizontal', key='-vminSlider-')],#Slider for dilation filter 
@@ -315,7 +297,7 @@ def launch_main_gui(name):
                              orientation='horizontal', key='-vmedianSlider-')],#Slider for dilation filter 
                   
                   [sg.Text("----------------Biosensor high signal fitlering----------------"),
-                  sg.Checkbox("No intensity filter", default=False, key='processornot')],
+                  sg.Checkbox("No intensity filter", default=False, key='-processornot-')],
                   [sg.Text("Noise filtering for sensor with no vacuole signal (biomedian radius)"),
                   sg.Slider(range=(1, 10), default_value=2, enable_events=True,
                              orientation='horizontal', key='-biomedianSlider-')],#Slider for dilation filter 

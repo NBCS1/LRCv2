@@ -1,14 +1,37 @@
 '''
+author: Nelson BC Serre, SICE team, RDP, ENS de Lyon. 2024
 
-test function on fluo pi (can wait)
+The LRC software provide a graphical interface to test and then automatically
+segment Arabidopsis thaliana plasma membrane and cytosolic fluorescence signal.
+The software works with movies and single frames and assist the user in ROI
+selection.
+The software segments plasma membranes from a reference channel
+    e.g.: Propidium iodide, lti6b-fluorophore
+And then measure the plasma membrane and cytosolic signal to calculate the
+ratio in order to quantify the subcellular dynamics of a given fluorophore.
+The software requires .czi files or individual .tif images/stack with 
+individual channels.
+
+Steps:
+    Channel splitting
+    Stabilisation in Z and XY
+    Semi-automated ROI selection
+    Segmentation
+    Quantification
+    Compilation and plotting
+
+main.py : Handles the events triggered by the GUI
+Depends on utils.image_analyses.py, utils.data.py, utils.plot.py, napari_roi.py
+and main_window.py
+
+--------------------------To do list--------------------------
+Finish the test function with napari to look at the superimposition
+
+--------------------------Bug to fix--------------------------
+fix param for 3D
 handle extra cells>ignore new, zero cell >NA
-
-
-Handle new cells and zero cells
-
-new seg correction module
-
-
+No signal, set to 0 not NA and no division just set ratio to 0
+Plots in Windows are completly crushed, set a default canvas size and plot size??
 '''
 
 
@@ -50,6 +73,7 @@ import json
 
 with open('config.json', 'r') as file:
     config = json.load(file)
+    print(config)
 #Image-J interface
 ij_path = config["ij_path"]
 
@@ -58,8 +82,8 @@ os.environ['R_HOME'] = config["R_HOME"]
 os.environ["R_LIBS"] = config["R_LIBS"]
 
 #option parameters
-params1=config["parameters"]
-params=data.process_parameters(data=params1)
+params=config["parameters"]
+print(params)
 gpu=config["selected_gpu"]
 
 import rpy2.rinterface as rinterface
@@ -450,16 +474,32 @@ def main(stat_export=stat_export):
             from utils.image_analyses import testImage
             imagesPath=values["ImageTest"]
             erosionfactortest=values["-erosionfactorSlider-"]
-            testParams=(values['-medianSlider-'],values['-maxSlider-'],values['-tophatSlider-'],values['-cr1Slider-'],
-                              values['-cr2Slider-'],values['-dilate1Slider-'],values['-dilate2Slider-'],values['-erosionSlider-'],
-                              values['-vminSlider-'],values['-vmedianSlider-'],values['-biomedianSlider-'],values['-biotophatSlider-'],
-                              values['processornot'])
-            fig=testImage(imagesPath,testParams,erosionfactortest,window)
+            testParams=config["parameters"]
+            # Mapping between keys in the dictionary and their corresponding keys in the source
+            key_mapping = {
+                'median_radius': '-medianSlider-',
+                'max_filter_size': '-maxSlider-',
+                'top_hat_radius': '-tophatSlider-',
+                'closing_radius1': '-cr1Slider-',
+                'closing_radius2': '-cr2Slider-',
+                'dilation_radius1': '-dilate1Slider-',
+                'dilation_radius2': '-dilate2Slider-',
+                'thresholdtype': '-thresholdtype-',
+                'vmin': '-vminSlider-',
+                'vmedian': '-vmedianSlider-',
+                'biomedian': '-biomedianSlider-',
+                'biotophat': '-biotophatSlider-',
+                'dontprocess': '-processornot-'
+            }
+            for key, source_key in key_mapping.items():
+                if source_key in values:
+                    testParams[key] = values[source_key]
+            fig=testImage(imagesPath,testParams,erosionfactortest,window,app=app)
         
         if event == "Save figure and config file":
             from utils.data import createTestJson
             pathtest=os.path.dirname(imagesPath)
-            fig.savefig(pathtest+'/test'+str(testParams)+'.png')
+            fig.savefig(pathtest+'/test'+'.png')
             createTestJson(testParams=testParams,path=pathtest+'/custom_config.json')
             
             

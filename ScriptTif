@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri May  3 13:42:19 2024
+
+@author: adminelson
+"""
+
+import os
+import re
+import tifffile
+
+def retrieveFileListandMeta(nd_file_path):
+    folder=os.path.dirname(nd_file_path)
+    list_files = os.listdir(folder)
+    i = 0
+    for file in list_files:
+        list_files[i] = os.path.join(folder, file)
+        i += 1
+    pattern=os.path.basename(nd_file_path[:-3])+"_w"
+    files = [file for file in list_files if pattern in file]
+    stages = sorted(set([re.search(r'_s(\d+)_', file_path).group(1) for file_path in files]),key=lambda x: int(x))
+    timeframes=sorted(set([re.search(r'_t(\d+)', file_path).group(1) for file_path in files]),key=lambda x: int(x))
+    channels=sorted(set([re.search(r'_w(.+?)_', file_path).group(1) for file_path in files]))
+    return files,stages,timeframes,channels
+    
+def saveFrameStacks(files,stages,timeframes,nd_file_path,singleframe):
+    for stage in stages:
+        pattern="_s"+stage+"_"
+        temp_img_paths=[file for file in files if pattern in file]
+        print(pattern)
+        os.makedirs(f'{os.path.dirname(nd_file_path)}/{os.path.basename(nd_file_path[:-3])}', exist_ok=True)
+        if channels is None:
+            filename=f'{os.path.dirname(nd_file_path)}/{os.path.basename(nd_file_path[:-3])}/{os.path.basename(nd_file_path[:-3])}_s{stage}.tif'
+            with tifffile.TiffWriter(filename) as img_stack:
+                for frame_path in temp_img_paths:
+                    img_stack.save(
+                        tifffile.imread(frame_path), 
+                        photometric='minisblack', 
+                        contiguous=True
+                    )
+        else:
+            for channel in channels:
+                if "GFP" in channel:
+                    filename=f'{os.path.dirname(nd_file_path)}/{os.path.basename(nd_file_path[:-3])}/C1-{os.path.basename(nd_file_path[:-3])}_s{stage}.tif'
+                    patternC="GFP"
+                    
+                elif "mCh" in channel:
+                    filename=f'{os.path.dirname(nd_file_path)}/{os.path.basename(nd_file_path[:-3])}/C2-{os.path.basename(nd_file_path[:-3])}_s{stage}.tif'
+                    patternC="mCh"
+                else:
+                    print("Skip this channel, I do not process this channels")
+                    continue
+                if singleframe:
+                    temp_img_paths2=[file for file in temp_img_paths if patternC in file]
+                    temp_img_paths2=[file for file in temp_img_paths2 if "t1" in file]
+                else:
+                    temp_img_paths2=[file for file in temp_img_paths if patternC in file]
+                with tifffile.TiffWriter(filename) as img_stack:
+                    for frame_path in temp_img_paths2:
+                        img_stack.save(
+                            tifffile.imread(frame_path), 
+                            photometric='minisblack', 
+                            contiguous=True
+                        )
+nd_file_path='/media/adminelson/Ultra Touch/Patricia/240412_auxin-solid-medium/240412_604_1xFAPP1_MS+suc+PI_1uM-IAA_.nd'
+files,stages,timeframes,channels=retrieveFileListandMeta(nd_file_path)
+saveFrameStacks(files,stages,timeframes,nd_file_path,singleframe=False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

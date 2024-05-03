@@ -3,7 +3,9 @@ from utils.data import filenamesFromPaths,find_file
 import tifffile
 import re
 from utils.plot import testDisplay
-def testImage(imagesPath,testParams,erosionfactortest,window):
+import numpy as np
+import napari
+def testImage(imagesPath,testParams,erosionfactortest,window,app):
     """Function to test and found the margin for filters values to apply to a set of data
     Parameters:
         imageC1: tif image of the biosensor
@@ -27,14 +29,22 @@ def testImage(imagesPath,testParams,erosionfactortest,window):
     imgC1 = tifffile.imread(imgpathC1,key=0)
     imgC2 = tifffile.imread(imgpathC2,key=0)
     #Set 1 gentle for beautiful PI staining
-    param1=testParams
-    membranes1, cytcorrected1, endosomes1=segmentation_all(image_pi=imgC2, image_biosensor=imgC1, erosionfactor=erosionfactortest, params=param1)
+    membranes1, cytcorrected1, endosomes1=segmentation_all(image_pi=imgC2, image_biosensor=imgC1, erosionfactor=erosionfactortest, params=testParams)
     
     fig=testDisplay(membranes=membranes1, novacuole=cytcorrected1, intracellular=endosomes1,window=window)
     
     #save multichannel
     stack = np.stack([imgC1,imgC2,membranes1,cytcorrected1], axis=0)
     tifffile.imwrite(path+"/Stacktest.tif", stack, metadata={"axes": "CYX"})
+    endosomes1=endosomes1.astype(int)
+    membranes1=membranes1.astype(int)
+    viewer3 = napari.Viewer()
+    viewer3.add_image(imgC1,name="Biosensor")
+    viewer3.add_labels(endosomes1,name="Cytosolic segmentation")
+    viewer3.add_image(imgC2,name="Plasma membrane ref")
+    viewer3.add_labels(membranes1,name="PM segmentation")
+    viewer3.show()
+    app.exec()
     return fig
     
 from utils import data, plot
@@ -56,32 +66,37 @@ def segmentation_all(image_pi, image_biosensor,erosionfactor, params):
         - endosomes (array): Segmented endosomal regions.
     """
     
-    median_radius, max_filter_size, top_hat_radius, closing_radius1, closing_radius2, dilation_radius1,dilation_radius2, erosion_radius,vmin,vmedian,biomedian,biotophat,dontprocess = params
     # Apply segmentation with varying parameters
-    denoised_image = cle.median_box(image_pi, radius_x=median_radius, radius_y=median_radius, radius_z=0)
-    denoised_image2 = cle.fabs(denoised_image)
-    denoised_image2 = ndimage.maximum_filter(cle.pull(denoised_image2), size=max_filter_size)
-    # Top hat
+    #Denoising, preserving edges
+    denoised_image = cle.median_box(image_pi, radius_x=params["median_radius"], radius_y=params["median_radius"], radius_z=0)
+    
+    #Feature/edge enhancement
+    denoised_image2 = ndimage.maximum_filter(cle.pull(denoised_image), size=params["max_filter_size"])
+    
+    # Top hat background correction>highlight small and bright features
     denoised_image2 = cle.top_hat_box(
-        denoised_image2, radius_x=top_hat_radius, radius_y=top_hat_radius, radius_z=0)
-    # Sqrt filter
+        denoised_image2, radius_x=params["top_hat_radius"], radius_y=params["top_hat_radius"], radius_z=0)
+    
+    # Square root box filter to enhance low contrast images
     denoised_image3 = cle.sqrt(denoised_image2)
+    
     # Otsu auto threshold
     binary1 = cle.threshold_otsu(denoised_image3)
+    
     # Closing operation to fill gaps
-    binary = cle.closing_labels(binary1, radius=closing_radius1)
+    binary = cle.closing_labels(binary1, radius=params["closing_radius1"])
     skeleton = skeletonize(cle.pull(binary))
     skeleton = (skeleton > 0).astype(np.uint8) * 255
     pruned_skeleton, segmented_img, segment_objects = prune(
         skel_img=skeleton, size=1000)
     cle_image = cle.push(pruned_skeleton)
-    dilate = cle.dilate_labels(cle_image, cle_image, radius=dilation_radius1)
-    dilate = cle.closing_labels(dilate, radius=closing_radius2)
-    dilate = cle.erode_labels(dilate, radius=erosion_radius)
+    dilate = cle.dilate_labels(cle_image, cle_image, radius=params["dilation_radius1"])
+    dilate = cle.closing_labels(dilate, radius=params["closing_radius2"])
+    dilate = cle.erode_labels(dilate, radius=params["erosion_radius"])
     dilate = skeletonize(cle.pull(dilate))
     cle_image = cle.push(dilate)
-    dilate = cle.dilate_labels(cle_image, cle_image, radius=dilation_radius2)
-    dilate = cle.closing_labels(dilate, radius=closing_radius2)
+    dilate = cle.dilate_labels(cle_image, cle_image, radius=params["dilation_radius2"])
+    dilate = cle.closing_labels(dilate, radius=params["closing_radius2"])
     inverted = np.asarray(dilate) == 0 * 1
     label = cle.connected_components_labeling_box(inverted)
     exclude = cle.exclude_labels_on_edges(label)
@@ -90,9 +105,13 @@ def segmentation_all(image_pi, image_biosensor,erosionfactor, params):
 
     # vacuole removal
     denoised_image = cle.median_box(
-        image_biosensor, radius_x=vmedian, radius_y=vmedian, radius_z=0)
-    mini = cle.minimum_box(denoised_image, radius_x=vmin, radius_y=vmin, radius_z=0)
-    binary2 = cle.threshold_otsu(mini)
+        image_biosensor, radius_x=params["vmedian"], radius_y=params["vmedian"], radius_z=0)
+    mini = cle.minimum_box(denoised_image, radius_x=params["vmin"], radius_y=params["vmin"], radius_z=0)
+    if params['thresholdtype']=="Otsu Threshold":
+        binary2 = cle.threshold_otsu(mini)
+    else:
+        binary2=cle.threshold(mini,constant=np.median(mini))
+        
     inverted2 = np.asarray(binary2) == 0 * 1
     cytcorrected = cle.binary_subtract(exclude, inverted2)
 
@@ -102,16 +121,16 @@ def segmentation_all(image_pi, image_biosensor,erosionfactor, params):
     
     # Keep endosomes from cytosolic signal
     denoised_image2 = cle.median_box(
-        image_biosensor, radius_x=biomedian, radius_y=biomedian)
+        image_biosensor, radius_x=params['biomedian'], radius_y=params['biomedian'])
     cyt_one = cle.divide_images(cytcorrected, cytcorrected)
     # 5 for 564, 3 for 604? and 1 for 991
     cyt_one = cle.erode_labels(cyt_one, radius=erosionfactor)
     cyt_one = cle.multiply_images(cyt_one, denoised_image2)
-    if dontprocess=="true":
+    if params['dontprocess']=="true":
         denoised_image3=cyt_one
     else:
         denoised_image3 = cle.top_hat_box(
-            cyt_one, radius_x=biotophat, radius_y=biotophat)
+            cyt_one, radius_x=params["biotophat"], radius_y=params["biotophat"])
     endosomes = cle.threshold_otsu(denoised_image3)#denoised image 3
     endosomes = cle.multiply_images(cytcorrected, endosomes)
     return membranes, cytcorrected, endosomes
@@ -142,9 +161,8 @@ def segmentationMovie(directory,window,erosionfactor,values,params):
         denoised_image = cle.median_box(
             frame, radius_x=median_radius, radius_y=median_radius, radius_z=0)
         # Maximum filter
-        denoised_image2 = cle.fabs(denoised_image)
         denoised_image2 = ndimage.maximum_filter(
-            cle.pull(denoised_image2), size=max_filter_size)
+            cle.pull(denoised_image), size=max_filter_size)
         # Top hat
         denoised_image2 = cle.top_hat_box(
             denoised_image2, radius_x=top_hat_radius, radius_y=top_hat_radius, radius_z=0)

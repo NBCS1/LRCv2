@@ -16,19 +16,20 @@ def createTestJson(testParams,path):
     "R_HOME": "/usr/lib/R/",
     "R_LIBS": "/home/adminelson/R/x86_64-pc-linux-gnu-library/4.3/",
     "parameters": {
-        "median_radius": str(int(testParams[0])),
-        "max_filter_size": str(int(testParams[1])),
-        "top_hat_radius": str(int(testParams[2])),
-        "closing_radius1": str(int(testParams[3])),
-        "closing_radius2": str(int(testParams[4])),
-        "dilation_radius1": str(int(testParams[5])),
-        "dilation_radius2": str(int(testParams[6])),
-        "erosion_radius": str(int(testParams[7])),
-        "vmin": str(int(testParams[8])),
-        "vmedian": str(int(testParams[9])),
-        "biomedian": str(int(testParams[10])),
-        "biotophat": str(int(testParams[11])),
-        "dontprocess": testParams[12]
+        "median_radius": testParams["median_radius"],
+        "max_filter_size": testParams["max_filter_size"],
+        "top_hat_radius": testParams["top_hat_radius"],
+        "closing_radius1": testParams["closing_radius1"],
+        "closing_radius2": testParams["closing_radius2"],
+        "dilation_radius1": testParams["dilation_radius1"],
+        "dilation_radius2": testParams["dilation_radius2"],
+        "erosion_radius": testParams["erosion_radius"],
+        "thresholdtype":testParams["thresholdtype"],
+        "vmin": testParams["vmin"],
+        "vmedian": testParams["vmedian"],
+        "biomedian": testParams["biomedian"],
+        "biotophat": testParams["biotophat"],
+        "dontprocess": testParams["dontprocess"],
     },
     "selected_gpu": gpu
     }
@@ -51,8 +52,7 @@ def readParameters():
     os.environ["R_LIBS"] = config["R_LIBS"]
 
     #option parameters
-    params1=config["parameters"]
-    params=data.process_parameters(data=params1)
+    params=config["parameters"]
     gpu=config["selected_gpu"]
     return ij_path,params,gpu
 
@@ -104,22 +104,6 @@ def singleFrameDataMeasures(image_biosensor,membranes,intracellular,img_pi_path,
     path_json=f'{path2}/output_single_frame_analysis_{day}/LRC_parameters.json'
     data.jsonProof(config='config.json',savepath=path_json)
     
-def process_parameters(data):
-    median_radius = int(data['median_radius'])
-    max_filter_size = int(data['max_filter_size'])
-    top_hat_radius = int(data['top_hat_radius'])
-    closing_radius1 = int(data['closing_radius1'])
-    closing_radius2 = int(data['closing_radius2'])
-    dilation_radius1 = int(data['dilation_radius1'])
-    dilation_radius2 = int(data['dilation_radius2'])
-    erosion_radius = int(data['erosion_radius'])
-    vmin = int(data['vmin'])
-    vmedian = int(data['vmedian'])
-    biomedian = int(data['biomedian'])
-    biotophat = int(data['biotophat'])
-    dontprocess=data['dontprocess']
-    parameters=median_radius, max_filter_size, top_hat_radius, closing_radius1, closing_radius2, dilation_radius1,dilation_radius2, erosion_radius,vmin,vmedian,biomedian,biotophat,dontprocess
-    return parameters
 
 def adjustTimeTracer(dataframe,folder_path,version,erosionfactor,date_str,savename):
     print("adjusttracerenter::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
