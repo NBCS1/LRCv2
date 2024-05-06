@@ -26,9 +26,9 @@ and main_window.py
 
 --------------------------To do list--------------------------
 Finish the test function with napari to look at the superimposition
+Add filter in napari
 
 --------------------------Bug to fix--------------------------
-fix param for 3D
 handle extra cells>ignore new, zero cell >NA
 No signal, set to 0 not NA and no division just set ratio to 0
 Plots in Windows are completly crushed, set a default canvas size and plot size??

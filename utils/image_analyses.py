@@ -156,76 +156,72 @@ def segmentationMovie(directory,window,erosionfactor,values,params):
     for frame, frameps in zip(image_stack, image_stackps):
         data.update_console(
             window, "-CONSOLE-", f'generating cytosol and membrane masks frame n° {str(i)}')
-        # if values["method"]=="method 1":
-        # Median blur denoising
-        denoised_image = cle.median_box(
-            frame, radius_x=median_radius, radius_y=median_radius, radius_z=0)
-        # Maximum filter
-        denoised_image2 = ndimage.maximum_filter(
-            cle.pull(denoised_image), size=max_filter_size)
-        # Top hat
+        # Apply segmentation with varying parameters
+        #Denoising, preserving edges
+        denoised_image = cle.median_box(image_stack, radius_x=params["median_radius"], radius_y=params["median_radius"], radius_z=0)
+        
+        #Feature/edge enhancement
+        denoised_image2 = ndimage.maximum_filter(cle.pull(denoised_image), size=params["max_filter_size"])
+        
+        # Top hat background correction>highlight small and bright features
         denoised_image2 = cle.top_hat_box(
-            denoised_image2, radius_x=top_hat_radius, radius_y=top_hat_radius, radius_z=0)
-        # Sqrt filter
+            denoised_image2, radius_x=params["top_hat_radius"], radius_y=params["top_hat_radius"], radius_z=0)
+        
+        # Square root box filter to enhance low contrast images
         denoised_image3 = cle.sqrt(denoised_image2)
-    
+        
         # Otsu auto threshold
         binary1 = cle.threshold_otsu(denoised_image3)
+        
         # Closing operation to fill gaps
-        binary = cle.closing_labels(binary1, radius=closing_radius1)
+        binary = cle.closing_labels(binary1, radius=params["closing_radius1"])
         skeleton = skeletonize(cle.pull(binary))
         skeleton = (skeleton > 0).astype(np.uint8) * 255
         pruned_skeleton, segmented_img, segment_objects = prune(
             skel_img=skeleton, size=1000)
         cle_image = cle.push(pruned_skeleton)
-        dilate = cle.dilate_labels(cle_image, cle_image, radius=dilation_radius1)
-        dilate = cle.closing_labels(dilate, radius=closing_radius2)
-        dilate = cle.erode_labels(dilate, radius=erosion_radius)
+        dilate = cle.dilate_labels(cle_image, cle_image, radius=params["dilation_radius1"])
+        dilate = cle.closing_labels(dilate, radius=params["closing_radius2"])
+        dilate = cle.erode_labels(dilate, radius=params["erosion_radius"])
         dilate = skeletonize(cle.pull(dilate))
         cle_image = cle.push(dilate)
-        dilate = cle.dilate_labels(cle_image, cle_image, radius=dilation_radius2)
-        dilate = cle.closing_labels(dilate, radius=closing_radius2)
-        skeleton_stack.append(cle.pull(dilate))
-    
+        dilate = cle.dilate_labels(cle_image, cle_image, radius=params["dilation_radius2"])
+        dilate = cle.closing_labels(dilate, radius=params["closing_radius2"])
         inverted = np.asarray(dilate) == 0 * 1
         label = cle.connected_components_labeling_box(inverted)
         exclude = cle.exclude_labels_on_edges(label)
         exclude = cle.exclude_labels_outside_size_range(
             exclude, minimum_size=2500, maximum_size=100000000)
-    
-        # Vacuole mask from sensor fluorescence
-        data.update_console(window, "-CONSOLE-",
-                       f'generating vacuole masks')
+        
+        # vacuole removal
         denoised_image = cle.median_box(
-            frameps, radius_x=vmedian, radius_y=vmedian, radius_z=0)
-        mini = cle.minimum_box(
-            denoised_image, radius_x=vmin, radius_y=vmin, radius_z=0)
-        binary2 = cle.threshold_otsu(mini)
+            image_stackps, radius_x=params["vmedian"], radius_y=params["vmedian"], radius_z=0)
+        mini = cle.minimum_box(denoised_image, radius_x=params["vmin"], radius_y=params["vmin"], radius_z=0)
+        if params['thresholdtype']=="Otsu Threshold":
+            binary2 = cle.threshold_otsu(mini)
+        else:
+            binary2=cle.threshold(mini,constant=np.median(mini))
+            
         inverted2 = np.asarray(binary2) == 0 * 1
         cytcorrected = cle.binary_subtract(exclude, inverted2)
-    
+        
         # remove out of range label
-        cytosol_stack.append(cle.pull(cytcorrected))
-        extend = cle.extend_labels_with_maximum_radius(
-            exclude, radius=7)
+        extend = cle.extend_labels_with_maximum_radius(exclude, radius=7)
         membranes = cle.binary_subtract(extend, label)
-    
-        membrane_stack.append(cle.pull(membranes))
-    
+        
         # Keep endosomes from cytosolic signal
         denoised_image2 = cle.median_box(
-            frameps, radius_x=biomedian, radius_y=biomedian)
+            image_stackps, radius_x=params['biomedian'], radius_y=params['biomedian'])
         cyt_one = cle.divide_images(cytcorrected, cytcorrected)
         # 5 for 564, 3 for 604? and 1 for 991
         cyt_one = cle.erode_labels(cyt_one, radius=erosionfactor)
         cyt_one = cle.multiply_images(cyt_one, denoised_image2)
-        
-        if dontprocess=="true":
+        if params['dontprocess']=="true":
             denoised_image3=cyt_one
         else:
             denoised_image3 = cle.top_hat_box(
-                cyt_one, radius_x=biotophat, radius_y=biotophat)
-        endosomes = cle.threshold_otsu(denoised_image3)
+                cyt_one, radius_x=params["biotophat"], radius_y=params["biotophat"])
+        endosomes = cle.threshold_otsu(denoised_image3)#denoised image 3
         endosomes = cle.multiply_images(cytcorrected, endosomes)
         endosomes_stack.append(cle.pull(endosomes))
     
