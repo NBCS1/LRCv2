@@ -67,6 +67,7 @@ from gui.napari_roi import napariROI, napariROI_single, napariTracer
 from utils import image_analyses, data, plot
 from plantcv.plantcv.morphology import prune
 import pyclesperanto_prototype as cle
+from utils.image_analyses import testImage
 
 #initialization of program dependencies paths
 import json
@@ -471,36 +472,11 @@ def main(stat_export=stat_export):
             final_df, plotcompiled = plot.plot_data_compiled_norm(values=values,window=window)
         
         if event == "Run test":
-            from utils.image_analyses import testImage
+            
             imagesPath=values["ImageTest"]
-            erosionfactortest=values["-erosionfactorSlider-"]
-            testParams=config["parameters"]
-            # Mapping between keys in the dictionary and their corresponding keys in the source
-            key_mapping = {
-                'median_radius': '-medianSlider-',
-                'max_filter_size': '-maxSlider-',
-                'top_hat_radius': '-tophatSlider-',
-                'closing_radius1': '-cr1Slider-',
-                'closing_radius2': '-cr2Slider-',
-                'dilation_radius1': '-dilate1Slider-',
-                'dilation_radius2': '-dilate2Slider-',
-                'thresholdtype': '-thresholdtype-',
-                'vmin': '-vminSlider-',
-                'vmedian': '-vmedianSlider-',
-                'biomedian': '-biomedianSlider-',
-                'biotophat': '-biotophatSlider-',
-                'dontprocess': '-processornot-'
-            }
-            for key, source_key in key_mapping.items():
-                if source_key in values:
-                    testParams[key] = values[source_key]
-            fig=testImage(imagesPath,testParams,erosionfactortest,window,app=app)
-        
-        if event == "Save figure and config file":
-            from utils.data import createTestJson
-            pathtest=os.path.dirname(imagesPath)
-            fig.savefig(pathtest+'/test'+'.png')
-            createTestJson(testParams=testParams,path=pathtest+'/custom_config.json')
+            
+            testImage(imagesPath,window,app)
+
             
             
 if __name__ == "__main__":

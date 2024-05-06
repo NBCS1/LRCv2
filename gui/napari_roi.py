@@ -405,3 +405,11 @@ def napariTracer(list_fileC1,app):
     viewer2.window.add_dock_widget(container, area='right',name="Background selection")
     viewer2.show()
     app.exec_()
+
+
+
+        
+    
+    
+    
+    

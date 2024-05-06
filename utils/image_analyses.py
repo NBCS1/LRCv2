@@ -4,8 +4,139 @@ import tifffile
 import re
 from utils.plot import testDisplay
 import numpy as np
+from napari.qt import thread_worker
 import napari
-def testImage(imagesPath,testParams,erosionfactortest,window,app):
+from utils.data import createTestJson
+# MagicGUI
+from magicgui import widgets
+from magicgui import magicgui
+import warnings
+import numpy as np
+from matplotlib.path import Path
+from utils import data
+import os
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QApplication 
+def napariTestFunction(img_pi,img_fluo,app,imagesPath):
+    # Create a Napari viewer
+    viewer = napari.Viewer()
+    viewer.add_image(img_fluo,name="Biosensor")
+    viewer.add_image(img_pi,name="Plasma membrane ref")
+    # Define a function to update the viewer with the slider values
+    @thread_worker(connect={
+        'medianSlider': 'value',
+        'maxSlider': 'value',
+        'tophatSlider': 'value',
+        'cr1Slider': 'value',
+        'cr2Slider': 'value',
+        'dilate1Slider': 'value',
+        'dilate2Slider': 'value',
+        'erosionSlider': 'value',
+        'vminSlider': 'value',
+        'vmedianSlider': 'value',
+        'biomedianSlider': 'value',
+        'biotophatSlider': 'value',
+        'erosionfactorSlider': 'value',
+        'thresholdType': 'value',
+        'processorNot': 'checked'
+    })
+    def update_viewer(**kwargs):
+        filters_info = ', '.join([f"{key}: {value}" for key, value in kwargs.items()])
+        viewer.text_overlay.text = filters_info
+    
+    # Create a magicgui widget
+    @magicgui(call_button='Apply Filters',thresholdType={"choices": ["Otsu Threshold", "Median Threshold"]})
+    def filter_widget(
+            img_pi,img_fluo,imagesPath,
+            medianSlider: int = 10,
+            maxSlider: int = 5,
+            tophatSlider: int = 20,
+            cr1Slider: int = 2,
+            cr2Slider: int = 10,
+            dilate1Slider: int = 15,
+            dilate2Slider: int = 3,
+            erosionSlider: int = 15,
+    
+            thresholdType: str = "Otsu Threshold",
+            vminSlider: int = 5,
+            vmedianSlider: int = 2,
+    
+            processorNot: bool = False,
+            biomedianSlider: int = 2,
+            biotophatSlider: int = 20,
+            erosionfactorSlider: int = 1
+    ):    
+            apply_filters(
+            medianSlider,
+            maxSlider,
+            tophatSlider,
+            cr1Slider,
+            cr2Slider,
+            dilate1Slider,
+            dilate2Slider,
+            erosionSlider,
+            thresholdType,
+            vminSlider,
+            vmedianSlider,
+            processorNot,
+            biomedianSlider,
+            biotophatSlider,
+            erosionfactorSlider
+        )
+    def apply_filters(
+        median_slider,
+        max_slider,
+        tophat_slider,
+        cr1_slider,
+        cr2_slider,
+        dilate1_slider,
+        dilate2_slider,
+        erosion_slider,
+        threshold_type,
+        vmin_slider,
+        vmedian_slider,
+        processor_not,
+        biomedian_slider,
+        biotophat_slider,
+        erosionfactor_slider,
+        ):
+
+        testParams={
+                        'median_radius': median_slider,
+                        'max_filter_size': max_slider,
+                        'top_hat_radius': tophat_slider,
+                        'closing_radius1': cr1_slider,
+                        'closing_radius2': cr2_slider,
+                        'dilation_radius1': dilate1_slider,
+                        'dilation_radius2': dilate2_slider,
+                        'thresholdtype': threshold_type,
+                        'vmin': vmin_slider,
+                        'vmedian': vmedian_slider,
+                        'biomedian': biomedian_slider,
+                        'biotophat': biotophat_slider,
+                        'dontprocess':  processor_not,
+                        'erosion_radius':erosionfactor_slider,
+                    }
+        membranes1, cytcorrected1, endosomes1=segmentation_all(image_pi=img_pi, image_biosensor=img_fluo, erosionfactor= erosion_slider, params=testParams)
+        endosomes1=endosomes1.astype(int)
+        membranes1=membranes1.astype(int)
+        viewer.add_labels(membranes1,name="Segm. PM")
+        viewer.add_labels(endosomes1,name="Segm. Cyt")
+        
+        pathtest=os.path.dirname(imagesPath)
+        createTestJson(testParams=testParams,path=pathtest+'/custom_config.json')
+        
+    # Add the magicgui widget to Napari
+    filter_widget.img_pi.bind(img_pi)
+    filter_widget.img_fluo.bind(img_fluo)
+    filter_widget.imagesPath.bind(imagesPath)
+    viewer.window.add_dock_widget(filter_widget, area='right')
+    
+    # Show the viewer
+    viewer.show()
+    app.exec_()
+
+def testImage(imagesPath,window,app):
     """Function to test and found the margin for filters values to apply to a set of data
     Parameters:
         imageC1: tif image of the biosensor
@@ -29,23 +160,8 @@ def testImage(imagesPath,testParams,erosionfactortest,window,app):
     imgC1 = tifffile.imread(imgpathC1,key=0)
     imgC2 = tifffile.imread(imgpathC2,key=0)
     #Set 1 gentle for beautiful PI staining
-    membranes1, cytcorrected1, endosomes1=segmentation_all(image_pi=imgC2, image_biosensor=imgC1, erosionfactor=erosionfactortest, params=testParams)
     
-    fig=testDisplay(membranes=membranes1, novacuole=cytcorrected1, intracellular=endosomes1,window=window)
-    
-    #save multichannel
-    stack = np.stack([imgC1,imgC2,membranes1,cytcorrected1], axis=0)
-    tifffile.imwrite(path+"/Stacktest.tif", stack, metadata={"axes": "CYX"})
-    endosomes1=endosomes1.astype(int)
-    membranes1=membranes1.astype(int)
-    viewer3 = napari.Viewer()
-    viewer3.add_image(imgC1,name="Biosensor")
-    viewer3.add_labels(endosomes1,name="Cytosolic segmentation")
-    viewer3.add_image(imgC2,name="Plasma membrane ref")
-    viewer3.add_labels(membranes1,name="PM segmentation")
-    viewer3.show()
-    app.exec()
-    return fig
+    napariTestFunction(imgC2,imgC1,app,imagesPath)
     
 from utils import data, plot
 def segmentation_all(image_pi, image_biosensor,erosionfactor, params):
@@ -133,6 +249,7 @@ def segmentation_all(image_pi, image_biosensor,erosionfactor, params):
             cyt_one, radius_x=params["biotophat"], radius_y=params["biotophat"])
     endosomes = cle.threshold_otsu(denoised_image3)#denoised image 3
     endosomes = cle.multiply_images(cytcorrected, endosomes)
+    
     return membranes, cytcorrected, endosomes
 
 from skimage.io import imsave

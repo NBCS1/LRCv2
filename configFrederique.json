@@ -3,20 +3,20 @@
     "R_HOME": "/usr/lib/R/",
     "R_LIBS": "/home/adminelson/R/x86_64-pc-linux-gnu-library/4.3/",
     "parameters": {
-        "median_radius": 4.0,
-        "max_filter_size": 4.0,
-        "top_hat_radius": 10.0,
-        "closing_radius1": 2.0,
-        "closing_radius2": 5.0,
-        "dilation_radius1": 6.0,
-        "dilation_radius2": 3.0,
-        "erosion_radius": 5,
+        "median_radius": 4,
+        "max_filter_size": 4,
+        "top_hat_radius": 10,
+        "closing_radius1": 2,
+        "closing_radius2": 5,
+        "dilation_radius1": 2,
+        "dilation_radius2": 3,
+        "erosion_radius": 1,
         "thresholdtype": "Median Threshold",
-        "vmin": 5.0,
-        "vmedian": 2.0,
-        "biomedian": 2.0,
-        "biotophat": 20.0,
-        "dontprocess": true
+        "vmin": 2,
+        "vmedian": 2,
+        "biomedian": 2,
+        "biotophat": 10,
+        "dontprocess": false
     },
     "selected_gpu": "NVIDIA RTX A3000 Laptop GPU"
 }
