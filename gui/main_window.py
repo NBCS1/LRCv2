@@ -46,7 +46,7 @@ def open_parameter_popup():
         [sg.Text('Dilation Radius 1'), sg.Input(params['dilation_radius1'], key='dilation_radius1')],
         [sg.Text('Dilation Radius 2'), sg.Input(params['dilation_radius2'], key='dilation_radius2')],
         [sg.Text('Erosion Radius'), sg.Input(params["erosion_radius"], key='erosion_radius')],
-        [sg.Text('Threshold for vacuoles and background'), sg.Combo(["Otsu Threshold", "Median Threshold"], default_value="Otsu Threshold", key='thresholdtype')],
+        [sg.Text('Threshold for vacuoles and background'), sg.Combo(["Otsu Threshold", "Median Threshold"], default_value=params["thresholdtype"], key='thresholdtype')],
         [sg.Text('VMin'), sg.Input(params["vmin"], key='vmin')],
         [sg.Text('VMedian'), sg.Input(params["vmedian"], key='vmedian')],
         [sg.Text('BioMedian'), sg.Input(params["biomedian"], key='biomedian')],

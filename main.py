@@ -29,11 +29,18 @@ Export all the values in compile (add raw compile, do not deleted the mean compi
 
 No signal, set to 0 not NA and no division just set ratio to 0
 
+Progress bar during single frame and movie ROI selection
+
+Save nparcomp summary as text file
 
 --------------------------Bug to fix--------------------------
+
+
 handle extra cells>ignore new, zero cell >NA values or new cell add empty retroactively?
 
 Plots in Windows are completly crushed, set a default canvas size and plot size??
+
+C2- in folder or filename, only look for filenames starting by C2-
 '''
 
 # Standard Library Imports
