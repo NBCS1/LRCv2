@@ -29,10 +29,9 @@ Export all the values in compile (add raw compile, do not deleted the mean compi
 
 No signal, set to 0 not NA and no division just set ratio to 0
 
-Compilation from folder not adding file by file (looking for pattern :"")
 
 --------------------------Bug to fix--------------------------
-handle extra cells>ignore new, zero cell >NA
+handle extra cells>ignore new, zero cell >NA values or new cell add empty retroactively?
 
 Plots in Windows are completly crushed, set a default canvas size and plot size??
 '''
