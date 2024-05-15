@@ -303,6 +303,7 @@ def segmentationMovie(directory,window,erosionfactor,values,params):
         cle_image = cle.push(dilate)
         dilate = cle.dilate_labels(cle_image, cle_image, radius=params["dilation_radius2"])
         dilate = cle.closing_labels(dilate, radius=params["closing_radius2"])
+        skeleton_stack.append(cle.pull(dilate))
         inverted = np.asarray(dilate) == 0 * 1
         label = cle.connected_components_labeling_box(inverted)
         exclude = cle.exclude_labels_on_edges(label)
@@ -320,11 +321,12 @@ def segmentationMovie(directory,window,erosionfactor,values,params):
             
         inverted2 = np.asarray(binary2) == 0 * 1
         cytcorrected = cle.binary_subtract(exclude, inverted2)
+        cytosol_stack.append(cle.pull(cytcorrected))
         
         # remove out of range label
         extend = cle.extend_labels_with_maximum_radius(exclude, radius=7)
         membranes = cle.binary_subtract(extend, label)
-        
+        membrane_stack.append(membranes)
         # Keep endosomes from cytosolic signal
         denoised_image2 = cle.median_box(
             frameps, radius_x=params['biomedian'], radius_y=params['biomedian'])
