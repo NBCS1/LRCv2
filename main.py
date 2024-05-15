@@ -29,7 +29,7 @@ Export all the values in compile (add raw compile, do not deleted the mean compi
 
 No signal, set to 0 not NA and no division just set ratio to 0
 
-Compilation from folder not adding file by file
+Compilation from folder not adding file by file (looking for pattern :"")
 
 --------------------------Bug to fix--------------------------
 handle extra cells>ignore new, zero cell >NA
@@ -369,12 +369,30 @@ def main(stat_export=stat_export):
         if event in ("Options1", "Options2"):
             open_parameter_popup()
 
-        if event == "Add":
-            # Extract the file name from the full path
-            file_name = values['File']
-            if file_name.endswith('.csv'):
-                if "results" in file_name:  # movie processesing
-
+            
+        if event == 'Clear':
+            window['-FOLDER1-'].update(value='')
+            window['-FOLDER2-'].update(value='')
+            window['-FOLDER3-'].update(value='')
+            window['-FOLDER4-'].update(value='')
+        
+        if event == "Compile":
+            #recreate compile data here instead of with ADD and then process the data, change function for process to
+            #retrieve folder
+            folder_name = values['File']
+            #retrieve "csv" files
+            files_list=data.find_file_recursive(folder_name, ".csv")
+            #get only "results-LRC
+            results_list=data.search_pattern_recursive(files_list, "results-LRC")
+            if len(results_list)==0:
+                results_list=data.search_pattern_recursive(files_list, "_analysis.csv")
+                singleprocessFlag=True
+            else:
+                singleprocessFlag=False
+            compiled_data=[]
+            datas=[]
+            for file_name in results_list:
+                if singleprocessFlag==False:  # movie processesing
                     try:
                         timeframeDuration= float(values["timeframeDuration"])
                         if timeframeDuration==0:
@@ -384,75 +402,32 @@ def main(stat_export=stat_export):
                         window["timeframeDuration"].update('')
                     else:
                         datas = data.process_file(file_name,timeframeDuration)
-                        window['File'].update(value='')
-                        file_name_only = os.path.basename(values['File'])
-                        global file_list
-                        file_list.append(file_name_only)  # Add the file to the list
-                        # Display the file list
-                        window['-CONSOLE2-'].update('\n'.join(file_list))
-                        window['File'].update(value='')  # Clear the file input field
-                        # Handling the data storage based on whether it's the first file or subsequent files
-                        global firstfile
-                        if firstfile:
-                            # z=0
+                        
+                        if file_name==results_list[0]:
                             compiled_data = datas
-                            # compiled_data,ite=dfreplace(df=compiled_data,variable="variable",iterator=z)
-                            # z+=ite
-                            firstfile = False
+                            
                         else:
-                            # data,ite=dfreplace(df=data,variable="variable",iterator=z)
-                            # z+=ite
                             compiled_data = pd.concat([compiled_data, datas], axis=0)
-    
+        
                             compiled_data = compiled_data.reset_index(drop=True)
+                            
                 else:  # single frame processing
                     datas = data.process_file_sf(file_name)
-                    window['File'].update(value='')
-                    file_name_only = os.path.basename(values['File'])
-                    file_list.append(file_name_only)  # Add the file to the list
-                    # Display the file list
-                    window['-CONSOLE2-'].update('\n'.join(file_list))
-                    window['File'].update(value='')  # Clear the file input field
-
-                    if firstfile:
+        
+                    if file_name==results_list[0]:
                         compiled_data = datas
-                        firstfile = False
                     else:
                         compiled_data = pd.concat([compiled_data, datas], axis=0)
                         compiled_data = compiled_data.reset_index(drop=True)
-
-            else:
-                sg.popup_error('Please select a valid CSV file.')
+    
             
-        if event == 'Clear':
-            window['-FOLDER1-'].update(value='')
-            window['-FOLDER2-'].update(value='')
-            window['-FOLDER3-'].update(value='')
-            window['-FOLDER4-'].update(value='')
-        
-        if event == "Clear list":
-            window['-CONSOLE2-'].update('')
-            window['File'].update(value='')
-            compiled_data=None
-            def clear_file_list():
-                global file_list
-                file_list = []
-            clear_file_list()
-            firstfile=True
-        
-        if event == "Compile":
             if compiled_data is not None:
                 if "Time" not in compiled_data.columns:  # single frame plotting
                     plots = plot.plot_data_sf(compiled_data,window=window)
                     data.get_save_folder(data=compiled_data, plot=plots)
-                    window['-CONSOLE2-'].update('')  # Clear the multiline element
-                    window['File'].update(value='')  # Clear the file input field
-
                 else:  # movies plotting
                     plots = plot.plot_data(compiled_data,window=window)
                     data.get_save_folder(data=compiled_data, plot=plots)
-                    window['-CONSOLE2-'].update('')  # Clear the multiline element
-                    window['File'].update(value='')  # Clear the file input field
                     z = 0
             else:
                 sg.popup_error("No valid data to process.")
