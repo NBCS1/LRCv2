@@ -260,7 +260,6 @@ import pyclesperanto_prototype as cle
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 def segmentationMovie(directory,window,erosionfactor,values,params):
     lrc_directory=os.getcwd()
-    median_radius, max_filter_size, top_hat_radius, closing_radius1, closing_radius2, dilation_radius1,dilation_radius2, erosion_radius,vmin,vmedian,biomedian,biotophat,dontprocess = params
     os.chdir(directory)
     # Load a time series of TIF files
     image_stack = tifffile.imread('pi.tif')
@@ -275,7 +274,7 @@ def segmentationMovie(directory,window,erosionfactor,values,params):
             window, "-CONSOLE-", f'generating cytosol and membrane masks frame n° {str(i)}')
         # Apply segmentation with varying parameters
         #Denoising, preserving edges
-        denoised_image = cle.median_box(image_stack, radius_x=params["median_radius"], radius_y=params["median_radius"], radius_z=0)
+        denoised_image = cle.median_box(frame, radius_x=params["median_radius"], radius_y=params["median_radius"], radius_z=0)
         
         #Feature/edge enhancement
         denoised_image2 = ndimage.maximum_filter(cle.pull(denoised_image), size=params["max_filter_size"])
@@ -312,7 +311,7 @@ def segmentationMovie(directory,window,erosionfactor,values,params):
         
         # vacuole removal
         denoised_image = cle.median_box(
-            image_stackps, radius_x=params["vmedian"], radius_y=params["vmedian"], radius_z=0)
+            frameps, radius_x=params["vmedian"], radius_y=params["vmedian"], radius_z=0)
         mini = cle.minimum_box(denoised_image, radius_x=params["vmin"], radius_y=params["vmin"], radius_z=0)
         if params['thresholdtype']=="Otsu Threshold":
             binary2 = cle.threshold_otsu(mini)
@@ -328,7 +327,7 @@ def segmentationMovie(directory,window,erosionfactor,values,params):
         
         # Keep endosomes from cytosolic signal
         denoised_image2 = cle.median_box(
-            image_stackps, radius_x=params['biomedian'], radius_y=params['biomedian'])
+            frameps, radius_x=params['biomedian'], radius_y=params['biomedian'])
         cyt_one = cle.divide_images(cytcorrected, cytcorrected)
         # 5 for 564, 3 for 604? and 1 for 991
         cyt_one = cle.erode_labels(cyt_one, radius=erosionfactor)
