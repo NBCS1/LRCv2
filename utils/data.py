@@ -135,12 +135,12 @@ def filenamesFromPaths(list_files,list_pattern_avoid):
     # extract filenames from full path
     list_filenames = [os.path.basename(path) for path in list_files]
     file_dict = dict(zip(list_filenames, list_files))
-    list_fileC2 = [file for file in list(file_dict.keys()) if "C2" in file]
+    list_fileC2 = [file for file in list(file_dict.keys()) if "C2-" in file]
     list_fileC2 = [item for item in list_fileC2 if all(
         not re.search(pattern, item) for pattern in list_pattern_avoid)]
     list_fileC2 = [file_dict.get(filename) for filename in list_fileC2]
     list_fileC1 = [file for file in list(
-        file_dict.keys()) if "C1" in file]
+        file_dict.keys()) if "C1-" in file]
     list_fileC1 = [item for item in list_fileC1 if all(
         not re.search(pattern, item) for pattern in list_pattern_avoid)]
     list_fileC1 = [file_dict.get(filename) for filename in list_fileC1]
@@ -463,4 +463,61 @@ def exp_decreasing(x, a, b, c):
     return a * np.exp(-b * x) + c
 
 
-  
+def movieRatios(table_cyt,table_mb,window,values):
+
+    for label in np.unique(table_cyt["label"]):
+        if int(label) == 1:
+            df_cyt = pd.DataFrame(
+                table_cyt[table_cyt["label"] == label])
+            df_cyt = df_cyt.set_index("Frames")
+            df_cyt = df_cyt.drop(
+                ["label", 'centroid_x', 'centroid_y'], axis=1)
+            df_cyt = df_cyt.rename(
+                columns={"mean_intensity": "Cytosolic_signal"})
+
+            df_mb = pd.DataFrame(
+                table_mb[table_mb["label"] == label])
+            df_mb = df_mb.set_index("Frames")
+            df_mb = df_mb.drop(
+                ['centroid_x', 'centroid_y'], axis=1)
+            df_mb = df_mb.rename(
+                columns={"mean_intensity": "Membrane_signal"})
+
+            df_ratio = pd.concat([df_mb, df_cyt], axis=1)
+            ratio_temp = df_ratio["Membrane_signal"].div(
+                df_ratio["Cytosolic_signal"], fill_value=-1)
+            df_ratio = pd.concat(
+                [df_ratio, ratio_temp], axis=1)
+            df_ratio = df_ratio.rename(
+                columns={0: "ratio_mb/cyt"})
+            df_ratio = df_ratio[[
+                "label", "Membrane_signal", "Cytosolic_signal", "ratio_mb/cyt"]]
+
+        else:
+            df_cyt = pd.DataFrame(
+                table_cyt[table_cyt["label"] == label])
+            df_cyt = df_cyt.set_index("Frames")
+            df_cyt = df_cyt.drop(
+                ["label", 'centroid_x', 'centroid_y'], axis=1)
+            df_cyt = df_cyt.rename(
+                columns={"mean_intensity": "Cytosolic_signal"})
+
+            df_mb = pd.DataFrame(
+                table_mb[table_mb["label"] == label])
+            df_mb = df_mb.set_index("Frames")
+            df_mb = df_mb.drop(
+                ['centroid_x', 'centroid_y'], axis=1)
+            df_mb = df_mb.rename(
+                columns={"mean_intensity": "Membrane_signal"})
+
+            df_ratio2 = pd.concat([df_mb, df_cyt], axis=1)
+            ratio_temp = df_ratio2["Membrane_signal"].div(
+                df_ratio2["Cytosolic_signal"], fill_value=-1)
+            df_ratio2 = pd.concat(
+                [df_ratio2, ratio_temp], axis=1)
+            df_ratio2 = df_ratio2.rename(
+                columns={0: "ratio_mb/cyt"})
+            df_ratio2 = df_ratio2[[
+                "label", "Membrane_signal", "Cytosolic_signal", "ratio_mb/cyt"]]
+            df_ratio = pd.concat([df_ratio, df_ratio2], axis=0)
+    return df_ratio

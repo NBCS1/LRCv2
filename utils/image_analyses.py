@@ -407,195 +407,67 @@ def segmentationMovie(directory,window,erosionfactor,values,params):
     
     return table_mb,table_cyt,cytosol_stack
 
-def cellChecker(cytosol_stack):
-    ncells = len(np.unique(cytosol_stack[0])) - 1  # Number of cells in the first frame
-    list_frames_tocorrect = []
-    list_frames_new_cells = []
-    list_frames_no_cells = []
-
-    for i, frame in enumerate(cytosol_stack):
-        ncells_temp = len(np.unique(frame)) - 1
-        if ncells_temp < ncells:
-            list_frames_tocorrect.append(i)
-        elif ncells_temp > ncells:
-            list_frames_tocorrect.append(i)
-            list_frames_new_cells.append(i)
-        elif ncells_temp == 0:
-            list_frames_no_cells.append(i)
-
-    return ncells, list_frames_tocorrect, list_frames_new_cells, list_frames_no_cells
-
-def nCellCorrection(list_frames_tocorrect,list_frames_new_cells,list_frames_no_cells,table_cyt,table_mb,window,ncells,cytosol_stack_lenght):
-    if len(list_frames_tocorrect) == 0:
-
-        for label in np.unique(table_cyt["label"]):
-            if label == 1:
-                df_cyt = pd.DataFrame(
-                    table_cyt[table_cyt["label"] == label])
-                df_cyt = df_cyt.set_index("Frames")
-                df_cyt = df_cyt.drop(
-                    ["label", 'centroid_x', 'centroid_y'], axis=1)
-                df_cyt = df_cyt.rename(
-                    columns={"mean_intensity": "Cytosolic_signal"})
-
-                df_mb = pd.DataFrame(
-                    table_mb[table_mb["label"] == label])
-                df_mb = df_mb.set_index("Frames")
-                df_mb = df_mb.drop(
-                    ['centroid_x', 'centroid_y'], axis=1)
-                df_mb = df_mb.rename(
-                    columns={"mean_intensity": "Membrane_signal"})
-
-                df_ratio = pd.concat([df_mb, df_cyt], axis=1)
-                ratio_temp = df_ratio["Membrane_signal"].div(
-                    df_ratio["Cytosolic_signal"], fill_value=-1)
-                df_ratio = pd.concat(
-                    [df_ratio, ratio_temp], axis=1)
-                df_ratio = df_ratio.rename(
-                    columns={0: "ratio_mb/cyt"})
-                df_ratio = df_ratio[[
-                    "label", "Membrane_signal", "Cytosolic_signal", "ratio_mb/cyt"]]
-
-            else:
-                df_cyt = pd.DataFrame(
-                    table_cyt[table_cyt["label"] == label])
-                df_cyt = df_cyt.set_index("Frames")
-                df_cyt = df_cyt.drop(
-                    ["label", 'centroid_x', 'centroid_y'], axis=1)
-                df_cyt = df_cyt.rename(
-                    columns={"mean_intensity": "Cytosolic_signal"})
-
-                df_mb = pd.DataFrame(
-                    table_mb[table_mb["label"] == label])
-                df_mb = df_mb.set_index("Frames")
-                df_mb = df_mb.drop(
-                    ['centroid_x', 'centroid_y'], axis=1)
-                df_mb = df_mb.rename(
-                    columns={"mean_intensity": "Membrane_signal"})
-
-                df_ratio2 = pd.concat([df_mb, df_cyt], axis=1)
-                ratio_temp = df_ratio2["Membrane_signal"].div(
-                    df_ratio2["Cytosolic_signal"], fill_value=-1)
-                df_ratio2 = pd.concat(
-                    [df_ratio2, ratio_temp], axis=1)
-                df_ratio2 = df_ratio2.rename(
-                    columns={0: "ratio_mb/cyt"})
-                df_ratio2 = df_ratio2[[
-                    "label", "Membrane_signal", "Cytosolic_signal", "ratio_mb/cyt"]]
-                df_ratio = pd.concat([df_ratio, df_ratio2], axis=1)
-
-       
-    else:
-        data.update_console(
-            window, "-CONSOLE-", '!!!! Error detected in cell labelling, correction in progress !!!!')
-        table_mb2 = table_mb.copy()
-        table_cyt2 = table_cyt.copy()
-        for wrong_frame in list_frames_tocorrect:
-      
-            data.update_console(window, "-CONSOLE-",
-                           f'correcting frame {str(wrong_frame)}')
-            # extract 1st error frame from dataframe
-            test = wrong_frame-1
-            while test in list_frames_tocorrect:
-                test = test-1
-            right_frame = test
-
-            correct = table_cyt[(
-                table_cyt["Frames"] == right_frame)].copy()
-            tocorrect = table_cyt[(
-                table_cyt["Frames"] == wrong_frame)].copy()
-
-            correctlabel_list = []
-            for y in np.arange(0, len(tocorrect["centroid_x"]), 1):
-                dist = []
-                for i in np.arange(0, ncells, 1):
-                    value = np.sqrt(((tocorrect["centroid_x"][y]-correct["centroid_x"][i])**2)+(
-                        (tocorrect["centroid_y"][y]-correct["centroid_y"][i])**2))
-                    dist.append(value)
-                correctlabel_list.append(dist.index(min(dist))+1)
-            mask = table_cyt2["Frames"] == wrong_frame
-            table_cyt2.loc[mask, "label"] = correctlabel_list
-            mask = table_mb2["Frames"] == wrong_frame
-            table_mb2.loc[mask, "label"] = correctlabel_list
-        ntf_ref = cytosol_stack_lenght
-        tf_ref = list(np.arange(0, ntf_ref, 1))
-        labels_ref = np.unique(table_mb2["label"])
-        for label in labels_ref:
-
-            ntf = len(table_mb2["Frames"]
-                      [table_mb2["label"] == label])
-            tf = table_mb2["Frames"][table_mb2["label"]
-                                     == label].values
-            tf = list(tf)
-
-            if ntf < ntf_ref:
-                # find missing ones
-                for i in tf_ref:
-                    if i not in tf:
-                        dummy_row = [
-                            label, np.nan, np.nan, np.nan, i]
-                        table_mb2.loc[len(table_mb2)] = dummy_row
-                        table_cyt2.loc[len(table_cyt2)] = dummy_row
-
-        table_cyt2 = table_cyt2.sort_values(by=['label', "Frames"])
-        table_mb2 = table_mb2.sort_values(by=['label', "Frames"])
+from sklearn.cluster import KMeans
+def autoCorrectLabels(df):
+    # Prepare the data for clustering
+    data = df[['centroid_x', 'centroid_y']].values
+    nCellMax=int(df["label"].max())
+    # Apply KMeans clustering
+    kmeans = KMeans(n_clusters=nCellMax, random_state=0).fit(data)
+    df['cluster'] = kmeans.labels_
+    
+    # Calculate the average centroids for each cluster
+    average_centroids = df.groupby('cluster').agg({
+        'centroid_x': 'mean',
+        'centroid_y': 'mean'
+    }).reset_index()
+    
+    # Sort clusters based on the average y-coordinate in descending order
+    average_centroids = average_centroids.sort_values(by='centroid_y', ascending=True).reset_index(drop=True)
+    average_centroids['new_label'] = range(1, len(average_centroids) + 1)
+    
+    # Create a mapping from the old cluster labels to the new labels
+    label_mapping = {row['cluster']: row['new_label'] for _, row in average_centroids.iterrows()}
+    df['new_label'] = df['cluster'].map(label_mapping)
+    
+    #save ref of exhanges
+    ref=df[["label","new_label"]].copy()
+    # Get unique labels
+    df['label']=df["new_label"]
+    df.drop(columns=["cluster","new_label"],inplace=True)
+    
+    unique_labels = df['label'].unique()
+    for frame in df['Frames'].unique():
+        # Get labels detected in this frame
+        labels_detected = df[df['Frames'] == frame]['label'].unique()
         
-        for label in np.unique(table_cyt2["label"]):
-            if label == 1:
-                df_cyt = pd.DataFrame(
-                    table_cyt2[table_cyt2["label"] == label])
-                df_cyt = df_cyt.set_index("Frames")
-                df_cyt = df_cyt.drop(
-                    ["label", 'centroid_x', 'centroid_y'], axis=1)
-                df_cyt = df_cyt.rename(
-                    columns={"mean_intensity": "Cytosolic_signal"})
+        # Check for missing labels
+        missing_labels = np.setdiff1d(unique_labels, labels_detected)
+        
+        # Add dummy rows for missing labels
+        for label in missing_labels:
+            df = df.append({'Frames': frame, 'label': label, 'centroid_x': np.nan, 'centroid_y': np.nan,"mean_intensity":np.nan}, ignore_index=True)
+    df = df.sort_values(by=['label','Frames'])
+    df = df.reset_index(drop=True)
+    return df,ref
 
-                df_mb = pd.DataFrame(
-                    table_mb2[table_mb2["label"] == label])
-                df_mb = df_mb.set_index("Frames")
-                df_mb = df_mb.drop(
-                    ['centroid_x', 'centroid_y'], axis=1)
-                df_mb = df_mb.rename(
-                    columns={"mean_intensity": "Membrane_signal"})
-
-                df_ratio = pd.concat([df_mb, df_cyt], axis=1)
-                ratio_temp = df_ratio["Membrane_signal"].div(
-                    df_ratio["Cytosolic_signal"], fill_value=-1)
-                df_ratio = pd.concat(
-                    [df_ratio, ratio_temp], axis=1)
-                df_ratio = df_ratio.rename(
-                    columns={0: "ratio_mb/cyt"})
-                df_ratio = df_ratio[[
-                    "label", "Membrane_signal", "Cytosolic_signal", "ratio_mb/cyt"]]
-
-            else:
-                df_cyt = pd.DataFrame(
-                    table_cyt2[table_cyt2["label"] == label])
-                df_cyt = df_cyt.set_index("Frames")
-                df_cyt = df_cyt.drop(
-                    ["label", 'centroid_x', 'centroid_y'], axis=1)
-                df_cyt = df_cyt.rename(
-                    columns={"mean_intensity": "Cytosolic_signal"})
-
-                df_mb = pd.DataFrame(
-                    table_mb2[table_mb2["label"] == label])
-                df_mb = df_mb.set_index("Frames")
-                df_mb = df_mb.drop(
-                    ['centroid_x', 'centroid_y'], axis=1)
-                df_mb = df_mb.rename(
-                    columns={"mean_intensity": "Membrane_signal"})
-
-                df_ratio2 = pd.concat([df_mb, df_cyt], axis=1)
-                ratio_temp = df_ratio2["Membrane_signal"].div(
-                    df_ratio2["Cytosolic_signal"], fill_value=-1)
-                df_ratio2 = pd.concat(
-                    [df_ratio2, ratio_temp], axis=1)
-                df_ratio2 = df_ratio2.rename(
-                    columns={0: "ratio_mb/cyt"})
-                df_ratio2 = df_ratio2[[
-                    "label", "Membrane_signal", "Cytosolic_signal", "ratio_mb/cyt"]]
-                df_ratio = pd.concat([df_ratio, df_ratio2], axis=1)
-    return df_ratio
+def applyLabelCorrectionToCytosol(ref,df):
+    df["label"]=ref["new_label"]
+    unique_labels = df['label'].unique()
+    for frame in df['Frames'].unique():
+        # Get labels detected in this frame
+        labels_detected = df[df['Frames'] == frame]['label'].unique()
+        
+        # Check for missing labels
+        missing_labels = np.setdiff1d(unique_labels, labels_detected)
+        
+        # Add dummy rows for missing labels
+        for label in missing_labels:
+            df = df.append({'Frames': frame, 'label': label, 'centroid_x': np.nan, 'centroid_y': np.nan,"mean_intensity":np.nan}, ignore_index=True)
+    df = df.sort_values(by=['label','Frames'])
+    df = df.reset_index(drop=True)
+    return df
+    
                 
 def bleach_correction(image_stack, background_intensity=0):
     """

@@ -35,12 +35,12 @@ Save nparcomp summary as text file
 
 --------------------------Bug to fix--------------------------
 
+after relabel actually relabel the images
 
 handle extra cells>ignore new, zero cell >NA values or new cell add empty retroactively?
 
 Plots in Windows are completly crushed, set a default canvas size and plot size??
 
-C2- in folder or filename, only look for filenames starting by C2-
 '''
 
 # Standard Library Imports
@@ -213,16 +213,13 @@ def main(stat_export=stat_export):
                                                                                       values=values,params=params)
                     os.chdir(lrc_directory)
                     
-                    ncells, list_frames_tocorrect, list_frames_new_cells, list_frames_no_cells=image_analyses.cellChecker(cytosol_stack=cytosol_stack)
-                    df_ratio=image_analyses.nCellCorrection(list_frames_tocorrect=list_frames_tocorrect,
-                                                   list_frames_new_cells=list_frames_new_cells,
-                                                   list_frames_no_cells=list_frames_no_cells,
-                                                   table_cyt=table_cyt,
-                                                   table_mb=table_mb,
-                                                   window=window,
-                                                   ncells=ncells,
-                                                   cytosol_stack_lenght=len(cytosol_stack))
-                    df_ratio.to_csv(folder_path+"test.csv")
+                    table_mb_corrected,ref=image_analyses.autoCorrectLabels(df=table_mb)
+
+                    table_cyt_corrected=image_analyses.applyLabelCorrectionToCytosol(ref,table_cyt)
+
+                    df_ratio=data.movieRatios(table_cyt_corrected,table_mb_corrected,window,values)
+
+                    #df_ratio.to_csv(folder_path+"test.csv")
                     data.adjustTimeTracer(dataframe=df_ratio,
                                           folder_path=folder_path,
                                           version=version,
