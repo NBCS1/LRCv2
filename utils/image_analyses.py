@@ -258,6 +258,7 @@ from scipy import ndimage
 from plantcv.plantcv.morphology import prune
 import pyclesperanto_prototype as cle
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 def segmentationMovie(directory,window,erosionfactor,values,params):
     lrc_directory=os.getcwd()
     os.chdir(directory)
@@ -391,22 +392,45 @@ def segmentationMovie(directory,window,erosionfactor,values,params):
     skeleton_stack = np.stack(skeleton_stack)
     endosomes_stack = np.stack(endosomes_stack)
     stitched_image = np.concatenate(image_stackps, axis=1)
-    imsave(directory+'/membrane_stack.tif', membrane_stack)
-    imsave(directory+'/cytosol_stack.tif', cytosol_stack)
-    imsave(directory+'/endosomes_stack.tif', endosomes_stack)
-    imsave(directory+'/skeleton_stack.tif', skeleton_stack)
+    #imsave(directory+'/membrane_stack.tif', membrane_stack)
+    #imsave(directory+'/cytosol_stack.tif', cytosol_stack)
+    #imsave(directory+'/endosomes_stack.tif', endosomes_stack)
+    #imsave(directory+'/skeleton_stack.tif', skeleton_stack)
     print("")
     data.jsonProof(config=f'{lrc_directory}/config.json',savepath=f'{directory}/LRC_parameters.json')
     
-    if values["save_stitched"]:
-        imsave(directory+'/stitchimage.tif', stitched_image)
+    #if values["save_stitched"]:
+     #   imsave(directory+'/stitchimage.tif', stitched_image)
     # ordering table
     table_mb = table_mb.sort_values(by=['label', "Frames"])
     table_cyt = table_cyt.sort_values(by=['label', "Frames"])
     os.chdir(lrc_directory)
     
-    return table_mb,table_cyt,cytosol_stack
+    return table_mb,table_cyt,membrane_stack,endosomes_stack,stitched_image
 
+def imageCorrectLabels(stacktocorrect,ref):
+    stack=stacktocorrect.copy()
+    
+    for frame_i,frame in enumerate(stack):
+        ref_temp=ref[ref['Frames']==frame_i].copy()
+        
+        if list(ref_temp["label"]) != list(ref_temp["new_label"]):
+            for label,new_label in zip(list(ref_temp["label"])[::-1],list(ref_temp["new_label"])[::-1]):
+                if label==list(ref_temp["label"])[::-1][0]:
+                    stack_temp=stack[frame_i].copy()
+                    stack_temp[stack_temp>0]=0
+                    temp=stack[frame_i].copy()
+                    temp[temp!=int(label)]=0
+                    temp[temp==int(label)]=int(new_label)
+
+                else:
+                    temp=stack[frame_i].copy()
+                    temp[temp!=int(label)]=0
+                    temp[temp==int(label)]=int(new_label)
+                stack_temp=stack_temp+temp
+        stack[frame_i]=stack_temp
+    return stack
+    
 from sklearn.cluster import KMeans
 def autoCorrectLabels(df):
     # Prepare the data for clustering
@@ -431,7 +455,7 @@ def autoCorrectLabels(df):
     df['new_label'] = df['cluster'].map(label_mapping)
     
     #save ref of exhanges
-    ref=df[["label","new_label"]].copy()
+    ref=df.copy()
     # Get unique labels
     df['label']=df["new_label"]
     df.drop(columns=["cluster","new_label"],inplace=True)

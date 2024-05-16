@@ -37,6 +37,8 @@ Save nparcomp summary as text file
 
 after relabel actually relabel the images
 
+change compile to work with line not label1 col col col label2....
+
 handle extra cells>ignore new, zero cell >NA values or new cell add empty retroactively?
 
 Plots in Windows are completly crushed, set a default canvas size and plot size??
@@ -207,16 +209,25 @@ def main(stat_export=stat_export):
                     data.update_console(
                         window, "-CONSOLE-", f'Analysing folder number {str(folder_nb)}/{str(nb_folders_toanalyse)}')
 
-                    table_mb,table_cyt,cytosol_stack=image_analyses.segmentationMovie( directory = folder_path,
+                    table_mb,table_cyt,membrane_stack,endosomes_stack,stitched_image=image_analyses.segmentationMovie( directory = folder_path,
                                                                                       window=window,
                                                                                       erosionfactor=erosionfactor,
                                                                                       values=values,params=params)
                     os.chdir(lrc_directory)
                     
                     table_mb_corrected,ref=image_analyses.autoCorrectLabels(df=table_mb)
-
+                    
                     table_cyt_corrected=image_analyses.applyLabelCorrectionToCytosol(ref,table_cyt)
+                    
+                    membrane_stack_corrected=image_analyses.imageCorrectLabels(membrane_stack,ref)
+                    endosomes_stack_corrected=image_analyses.imageCorrectLabels(endosomes_stack,ref)
+                    
+                    tifffile.imwrite(folder_path+"/membranes_mask.tif", membrane_stack_corrected.astype(np.uint8))
+                    tifffile.imwrite(folder_path+"/cytosol_mask.tif", endosomes_stack_corrected.astype(np.uint8))
+                    if values["save_stitched"]:
+                        tifffile.imwrite(folder_path+"/stitched_biosensor.tif", stitched_image)
 
+                    
                     df_ratio=data.movieRatios(table_cyt_corrected,table_mb_corrected,window,values)
 
                     #df_ratio.to_csv(folder_path+"test.csv")
