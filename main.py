@@ -27,8 +27,6 @@ and main_window.py
 --------------------------To do list--------------------------
 Export all the values in compile (add raw compile, do not deleted the mean compile as LRC needs it to plot)
 
-No signal, set to 0 not NA and no division just set ratio to 0
-
 Progress bar during single frame and movie ROI selection
 
 Save nparcomp summary as text file
@@ -37,8 +35,6 @@ Save nparcomp summary as text file
 
 
 change compile to work with line not label1 col col col label2....
-
-handle extra cells>ignore new, zero cell >NA values or new cell add empty retroactively?
 
 Plots in Windows are completly crushed, set a default canvas size and plot size??
 
