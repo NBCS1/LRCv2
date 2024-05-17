@@ -366,18 +366,18 @@ def plot_data_compiled_norm(values,window):
 
         # Calculate the average value for each cell during the control period
         control_avg = control_df.groupby(['condition'])[
-            'Average'].mean().reset_index()
+            'ratio_mb/cyt'].mean().reset_index()
 
         # Merge the control average back into the original DataFrame
         df_merged = pd.merge(compiled_df, control_avg, on=[
                              'condition'], suffixes=('', '_control'))
 
         # Perform the normalization: value / average_control_value
-        df_merged['value_normalized'] = df_merged['Average'] / \
-            df_merged['Average_control']
+        df_merged['value_normalized'] = df_merged['ratio_mb/cyt'] / \
+            df_merged['ratio_mb/cyt_control']
 
         plotcompiled = sns.relplot(
-            x="Time", y="Average", kind="line", errorbar='sd', data=compiled_df, hue="condition")
+            x="Time", y="ratio_mb/cyt", kind="line", errorbar='sd', data=compiled_df, hue="condition")
         plotcompiled_norm = sns.relplot(
             x="Time", y="value_normalized", kind="line", errorbar='sd', data=df_merged, hue="condition")
         # Add a red dashed line at x=0 to each Axes in the FacetGrid

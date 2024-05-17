@@ -230,7 +230,7 @@ def launch_main_gui(name):
                [sg.Text("Indicate you timeframe interval in minutes (leave default if singleframes)"),
                sg.InputText("2",key='timeframeDuration', enable_events=True,size=(4,1))],
                [sg.Button("Compile")],
-               [sg.Canvas(key='-CANVAS2-')]]
+               [sg.Canvas(key='-CANVAS2-', size=(400, 400))]]
     
     layout3 = [[sg.Text("Select compiled data in the csv format:", size=(56, 1)), sg.Text("Enter the name of your conditions")],
                [sg.InputText(key="PlotFile1"), sg.FileBrowse(file_types=(
