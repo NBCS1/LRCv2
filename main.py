@@ -31,9 +31,8 @@ Progress bar during single frame and movie ROI selection
 Save nparcomp summary as text file
 
 --------------------------Bug to fix--------------------------
-Bug when norm, looking for average column revised normalization method!
 
-Plots in Windows are completly crushed, set a default canvas size and plot size??
+Plots in Windows are completly crushed, set a default canvas size and plot size?? need to test on windows.
 
 '''
 

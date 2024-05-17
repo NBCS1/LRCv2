@@ -186,6 +186,7 @@ def plot_nparcomp(file_path, column_cond, column_values, column_replicate, compa
                       data=df, hue=df.iloc[:, column_replicate], ax=ax)
         sns.despine(offset=2, trim=True, ax=ax)
         sns.set_style("ticks")
+        
         ax.legend().remove()
         
     plt.close(fig)
@@ -283,6 +284,7 @@ def plot_data_compiled(values,window):
     if "Time" in compiled_df.columns:  # movie
         plotcompiled = sns.relplot(
             x="Time", y="ratio_mb/cyt", kind="line", errorbar='se', data=compiled_df, hue="condition")
+        plotcompiled.fig.set_size_inches(4, 4) 
         for item in window['-CANVAS3-'].TKCanvas.pack_slaves():
             item.destroy()
         draw_figure(window['-CANVAS3-'].TKCanvas, plotcompiled.fig)
@@ -378,8 +380,10 @@ def plot_data_compiled_norm(values,window):
 
         plotcompiled = sns.relplot(
             x="Time", y="ratio_mb/cyt", kind="line", errorbar='sd', data=compiled_df, hue="condition")
+        plotcompiled.fig.set_size_inches(4, 4) 
         plotcompiled_norm = sns.relplot(
             x="Time", y="value_normalized", kind="line", errorbar='sd', data=df_merged, hue="condition")
+        plotcompiled_norm.fig.set_size_inches(4, 4) 
         # Add a red dashed line at x=0 to each Axes in the FacetGrid
         for ax in plotcompiled.axes.flat:
             ax.axvline(0, color='r', linestyle='--')
@@ -483,6 +487,11 @@ def draw_figure(canvas, figure):
     Note:
     - This function is typically used in GUI applications where matplotlib plots need to be displayed in a Tkinter interface.
     """
+    # Set the size of the figure
+    figure.set_size_inches(4, 4, forward=True)
+    figure.set_dpi(100)
+    
+    # Embed the figure in the Tkinter canvas
     figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
     figure_canvas_agg.draw()
     figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
@@ -512,7 +521,7 @@ def plot_data_sf(df,window):
     sns.boxplot(y="Average ratios", ax=ax, data=df)  # Draw boxplot on the axes
     sns.stripplot(y="Average ratios", ax=ax, data=df, jitter=True,
                   color='orange')  # Draw stripplot on the axes
-
+    plot.fig.set_size_inches(4, 4) 
     for item in window['-CANVAS2-'].TKCanvas.pack_slaves():
         item.destroy()
 
@@ -543,6 +552,7 @@ def plot_data(df,window):
     # Calculate the average and standard error
     plot = sns.relplot(x="Time", y="ratio_mb/cyt", kind="line",
                        errorbar='se', data=df)
+    plot.fig.set_size_inches(4, 4) 
     for item in window['-CANVAS2-'].TKCanvas.pack_slaves():
         item.destroy()
     draw_figure(window['-CANVAS2-'].TKCanvas, plot.fig)
