@@ -428,7 +428,7 @@ def imageCorrectLabels(stacktocorrect,ref):
                     temp[temp!=int(label)]=0
                     temp[temp==int(label)]=int(new_label)
                 stack_temp=stack_temp+temp
-        stack[frame_i]=stack_temp
+            stack[frame_i]=stack_temp
     return stack
     
 from sklearn.cluster import KMeans

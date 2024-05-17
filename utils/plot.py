@@ -540,7 +540,8 @@ def plot_data(df,window):
     Note:
     - This function is designed for use in a GUI application with a Tkinter canvas element.
     """
-    plot = sns.relplot(x="Time", y="Average", kind="line",
+    # Calculate the average and standard error
+    plot = sns.relplot(x="Time", y="ratio_mb/cyt", kind="line",
                        errorbar='se', data=df)
     for item in window['-CANVAS2-'].TKCanvas.pack_slaves():
         item.destroy()

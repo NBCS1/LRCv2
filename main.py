@@ -35,7 +35,6 @@ Save nparcomp summary as text file
 
 --------------------------Bug to fix--------------------------
 
-after relabel actually relabel the images
 
 change compile to work with line not label1 col col col label2....
 
@@ -218,25 +217,38 @@ def main(stat_export=stat_export):
                     table_mb_corrected,ref=image_analyses.autoCorrectLabels(df=table_mb)
                     
                     table_cyt_corrected=image_analyses.applyLabelCorrectionToCytosol(ref,table_cyt)
+                    data.update_console(
+                        window, "-CONSOLE-", 'Checking cell labels')
+                    try:
+                        membrane_stack_corrected=image_analyses.imageCorrectLabels(membrane_stack,ref)
+                        tifffile.imwrite(folder_path+"/membranes_mask.tif", membrane_stack_corrected.astype(np.uint8))
+                    except:
+                        tifffile.imwrite(folder_path+"/membranes_mask.tif", membrane_stack.astype(np.uint8))
+                        data.update_console(
+                            window, "-CONSOLE-", 'No correction to apply')
+                        
+                    try:    
+                        endosomes_stack_corrected=image_analyses.imageCorrectLabels(endosomes_stack,ref)
+                        tifffile.imwrite(folder_path+"/cytosol_mask.tif", endosomes_stack_corrected.astype(np.uint8))
+                    except:
+                        tifffile.imwrite(folder_path+"/cytosol_mask.tif", endosomes_stack.astype(np.uint8))
+                        data.update_console(
+                            window, "-CONSOLE-", 'No correction to apply')
                     
-                    membrane_stack_corrected=image_analyses.imageCorrectLabels(membrane_stack,ref)
-                    endosomes_stack_corrected=image_analyses.imageCorrectLabels(endosomes_stack,ref)
                     
-                    tifffile.imwrite(folder_path+"/membranes_mask.tif", membrane_stack_corrected.astype(np.uint8))
-                    tifffile.imwrite(folder_path+"/cytosol_mask.tif", endosomes_stack_corrected.astype(np.uint8))
                     if values["save_stitched"]:
                         tifffile.imwrite(folder_path+"/stitched_biosensor.tif", stitched_image)
 
                     
                     df_ratio=data.movieRatios(table_cyt_corrected,table_mb_corrected,window,values)
 
-                    #df_ratio.to_csv(folder_path+"test.csv")
                     data.adjustTimeTracer(dataframe=df_ratio,
                                           folder_path=folder_path,
                                           version=version,
                                           erosionfactor=erosionfactor,
                                           date_str=date_str,
                                           savename=savename)
+
                     
             except Exception as e:
                 data.update_console(
@@ -390,6 +402,7 @@ def main(stat_export=stat_export):
             window['-FOLDER3-'].update(value='')
             window['-FOLDER4-'].update(value='')
         
+
         if event == "Compile":
             #recreate compile data here instead of with ADD and then process the data, change function for process to
             #retrieve folder
@@ -424,6 +437,7 @@ def main(stat_export=stat_export):
                             compiled_data = pd.concat([compiled_data, datas], axis=0)
         
                             compiled_data = compiled_data.reset_index(drop=True)
+                        
                             
                 else:  # single frame processing
                     datas = data.process_file_sf(file_name)
@@ -433,8 +447,7 @@ def main(stat_export=stat_export):
                     else:
                         compiled_data = pd.concat([compiled_data, datas], axis=0)
                         compiled_data = compiled_data.reset_index(drop=True)
-    
-            
+            compiled_data.to_csv('/home/adminelson/Documents/FERONIA_RALFs/dev/DEMO/Fulltest_movies/604/filename.csv', index=False)
             if compiled_data is not None:
                 if "Time" not in compiled_data.columns:  # single frame plotting
                     plots = plot.plot_data_sf(compiled_data,window=window)

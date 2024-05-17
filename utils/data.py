@@ -122,6 +122,8 @@ def adjustTimeTracer(dataframe,folder_path,version,erosionfactor,date_str,savena
             dataframe.index = dataframe.index-change
             dataframe.to_csv(folder_path+'/results-LRC'+str(version) +
                             '-erode_'+str(erosionfactor)+"-"+date_str+savename+'.csv')
+            # modify frame columns
+
 
 def folderToAnalyze(values):
     nb_folders_toanalyse = 0
@@ -281,7 +283,7 @@ def get_save_folder(data, plot):
             foldy = values3.get('Folder')
             if foldy:
                 plot.savefig(foldy+"_plot.svg")
-                data.to_csv(foldy+'_results-compile.csv')
+                data.to_csv(foldy+'_results-compile.csv',index=False)
             window3.close()
 
     return None
@@ -341,25 +343,12 @@ def process_file(file_name,timeframeDuration):
     - The function assumes the presence of a 'Frames' column in the CSV file for time data.
     """
     all_data = None   # Initialization
-    firstcol = True
     df = pd.read_csv(file_name)
-    dfRatioCols = search_pattern_recursive(df.columns, "ratio_mb/cyt")
-    if len(dfRatioCols) > 0:
-        for i in dfRatioCols:
-            if firstcol:
-                all_data = df[[i]]
-                firstcol = False
-            else:
-                all_data = pd.concat([all_data,  df[[i]]], axis=1)
-        all_data = all_data[dfRatioCols].mean(axis=1)
-        # n_t=len(all_data)
-        # time_col=np.arange(0,2*n_t,2)
-        time_col = df["Frames"]*timeframeDuration
-        all_data = pd.concat([time_col, all_data], axis=1)
-        all_data = all_data.rename(columns={0: "Average"})
-        all_data = all_data.rename(columns={'Frames': 'Time'})
-        # all_data=pd.melt(all_data,"Time")
-        all_data['File'] = os.path.basename(os.path.dirname(file_name))
+    time_col = df["Frames"]*timeframeDuration
+    df = df.rename(columns={'Frames': 'Frame'})
+    all_data = pd.concat([time_col, df], axis=1)
+    all_data = all_data.rename(columns={'Frames': 'Time'})
+    all_data['File'] = os.path.basename(os.path.dirname(file_name))
     return all_data
 
 
@@ -492,7 +481,7 @@ def movieRatios(table_cyt,table_mb,window,values):
                 columns={0: "ratio_mb/cyt"})
             df_ratio = df_ratio[[
                 "label", "Membrane_signal", "Cytosolic_signal", "ratio_mb/cyt"]]
-
+            df_ratio_av=df_ratio.copy()
         else:
             df_cyt = pd.DataFrame(
                 table_cyt[table_cyt["label"] == label])
@@ -519,5 +508,6 @@ def movieRatios(table_cyt,table_mb,window,values):
                 columns={0: "ratio_mb/cyt"})
             df_ratio2 = df_ratio2[[
                 "label", "Membrane_signal", "Cytosolic_signal", "ratio_mb/cyt"]]
-            df_ratio = pd.concat([df_ratio, df_ratio2], axis=0)
+            
+            df_ratio = pd.concat([df_ratio, df_ratio2], axis=0)##at the end of each other by col
     return df_ratio
