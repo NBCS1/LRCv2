@@ -282,7 +282,7 @@ def plot_data_compiled(values,window):
 
     if "Time" in compiled_df.columns:  # movie
         plotcompiled = sns.relplot(
-            x="Time", y="Average", kind="line", errorbar='se', data=compiled_df, hue="condition")
+            x="Time", y="ratio_mb/cyt", kind="line", errorbar='se', data=compiled_df, hue="condition")
         for item in window['-CANVAS3-'].TKCanvas.pack_slaves():
             item.destroy()
         draw_figure(window['-CANVAS3-'].TKCanvas, plotcompiled.fig)
@@ -290,8 +290,8 @@ def plot_data_compiled(values,window):
         return compiled_df, plotcompiled
 
     else:  # single frame
-
-        fig = plot_nparcomp(file_path=compiled_df, column_cond=3, column_values=2,
+        print(compiled_df)
+        fig = plot_nparcomp(file_path=compiled_df, column_cond=6, column_values=4,
                             column_replicate=1, compare='all',statsbox=values["statsbox"],listfiles=listfiles)  # create object to return
 
         for item in window['-CANVAS3-'].TKCanvas.pack_slaves():

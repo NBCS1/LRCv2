@@ -74,7 +74,7 @@ def singleFrameDataMeasures(image_biosensor,membranes,intracellular,img_pi_path,
     basename_temp = os.path.basename(img_pi_path)
     basename_temp = basename_temp.replace(basename_temp[0:3], "")
     table_mb_temp = pd.concat(
-        [table_mb_temp, pd.DataFrame({'Files': [basename_temp] * 3})], axis=1)
+        [table_mb_temp, pd.DataFrame({'Files': [basename_temp] * len(table_mb_temp["label"])})], axis=1)
     table_mb_temp = table_mb_temp.rename(
         columns={'mean_intensity': "mean_intensity_membranes"})
     table_cyt_temp = pd.DataFrame(
@@ -94,7 +94,7 @@ def singleFrameDataMeasures(image_biosensor,membranes,intracellular,img_pi_path,
         os.mkdir(path2+"/output_single_frame_analysis_"+day)
 
     table_ratio.to_csv(
-        f'{path2}/output_single_frame_analysis_{day}/{basename_temp}_analysis.csv')
+        f'{path2}/output_single_frame_analysis_{day}/{basename_temp}_analysis.csv',index=False)
     
     #export segmentations
     path_mb=f'{path2}/output_single_frame_analysis_{day}/{basename_temp}_membranes-segmentation.tif'
@@ -371,10 +371,12 @@ def process_file_sf(file_name):
     - The function assumes the presence of a 'Ratio mb/intra' column in the CSV file.
     """
     df = pd.read_csv(file_name)
+    df2=df.copy()
     average = df['Ratio mb/intra'].mean()
     all_data = pd.DataFrame(
         {"File": [os.path.basename(file_name)], "Average ratios": [average]})
-    return all_data
+    
+    return df2,all_data
 
 
 def find_file_recursive(folder, pattern):

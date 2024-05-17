@@ -25,7 +25,6 @@ Depends on utils.image_analyses.py, utils.data.py, utils.plot.py, napari_roi.py
 and main_window.py
 
 --------------------------To do list--------------------------
-Export all the values in compile (add raw compile, do not deleted the mean compile as LRC needs it to plot)
 
 Progress bar during single frame and movie ROI selection
 
@@ -33,8 +32,6 @@ Save nparcomp summary as text file
 
 --------------------------Bug to fix--------------------------
 
-
-change compile to work with line not label1 col col col label2....
 
 Plots in Windows are completly crushed, set a default canvas size and plot size??
 
@@ -282,8 +279,7 @@ def main(stat_export=stat_export):
                 erosionfactor = 3
             
             #retrieve splitted image folder
-            biosensor_folder = values["-FOLDER12-"]
-            pi_folder = biosensor_folder
+            biosensor_folder = values["-FOLDER12-"]+"/"
             
             #check if the folder was specified by user
             if biosensor_folder == "":
@@ -291,11 +287,12 @@ def main(stat_export=stat_export):
                     "No folder was specified", title="Folder error")
 
             # retrieve image list C1 > biosensor
-            biosensor_img = data.find_file(folder=biosensor_folder, pattern="C1")
+            biosensor_img = data.find_file(folder=biosensor_folder, pattern="C1-")
+            
             biosensor_img.sort()
             
             # retrieve image list C2 > Pi
-            pi_img = data.find_file(folder=pi_folder, pattern="C2")
+            pi_img = data.find_file(folder=biosensor_folder, pattern="C2-")
             pi_img.sort()
             
             # check same number of images
@@ -361,8 +358,6 @@ def main(stat_export=stat_export):
                     image_biosensor=image_biosensor.squeeze()
                     data.update_console(window, "-CONSOLE1-",'generating segmentation')
                     print("Images are loaded")
-                    print(image_pi.shape)
-                    print(image_biosensor.shape)
                     membranes, novacuole, intracellular = image_analyses.segmentation_all(image_pi=image_pi,
                                                                                           image_biosensor=image_biosensor,
                                                                                           params=params,
@@ -436,17 +431,20 @@ def main(stat_export=stat_export):
                         
                             
                 else:  # single frame processing
-                    datas = data.process_file_sf(file_name)
+                    datas,average = data.process_file_sf(file_name)
         
                     if file_name==results_list[0]:
                         compiled_data = datas
+                        averages_table=average
                     else:
                         compiled_data = pd.concat([compiled_data, datas], axis=0)
                         compiled_data = compiled_data.reset_index(drop=True)
-            compiled_data.to_csv('/home/adminelson/Documents/FERONIA_RALFs/dev/DEMO/Fulltest_movies/604/filename.csv', index=False)
+                        averages_table = pd.concat([averages_table, average], axis=0)
+                        averages_table = averages_table.reset_index(drop=True)
+
             if compiled_data is not None:
                 if "Time" not in compiled_data.columns:  # single frame plotting
-                    plots = plot.plot_data_sf(compiled_data,window=window)
+                    plots = plot.plot_data_sf(averages_table,window=window)
                     data.get_save_folder(data=compiled_data, plot=plots)
                 else:  # movies plotting
                     plots = plot.plot_data(compiled_data,window=window)
