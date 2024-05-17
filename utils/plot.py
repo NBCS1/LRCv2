@@ -1,6 +1,6 @@
 import seaborn as sns
 from datetime import date
-
+import sys
 import pandas as pd
 import json
 import os
@@ -58,7 +58,11 @@ def plot_nparcomp(file_path, column_cond, column_values, column_replicate, compa
         # Load the necessary R packages
         nparcomp = ro.packages.importr('nparcomp')
         rcomp = ro.packages.importr('rcompanion')
-    
+        # Load the R base library
+        base = ro.packages.importr('base')
+        
+        # Import the summary function from R
+        summary_r = ro.r['summary']
         # Set up the formula for the nparcomp test
         formula = Formula("y~x")
     
@@ -74,6 +78,7 @@ def plot_nparcomp(file_path, column_cond, column_values, column_replicate, compa
                 test_result = nparcomp.nparcomp(formula, rdf, **{"type": "Tukey"})
                 # Extract the p-values from the test result object
                 p_values = test_result.rx2('Analysis')[5]
+                
                 cond = test_result.rx2('connames')
             else:
                 test_result = nparcomp.nparcomp(
@@ -86,7 +91,7 @@ def plot_nparcomp(file_path, column_cond, column_values, column_replicate, compa
             test_result = ttest(formula, rdf, **{'method': 'permu'})
             # Extract the p-values from the test result object
             p_values = test_result.rx2('Analysis')[4][0]
-    
+        
         if compare == 'all' and conditions_nb > 2:
             with localconverter(ro.default_converter + pandas2ri.converter):
                 cond_P = ro.conversion.rpy2py(cond)
@@ -143,7 +148,7 @@ def plot_nparcomp(file_path, column_cond, column_values, column_replicate, compa
             # extract pvalues and transfer in ***
             with localconverter(ro.default_converter + pandas2ri.converter):
                 stars = ro.conversion.rpy2py(p_values)
-    
+            
             if conditions_nb > 2:
                 stars2 = []
                 for i in stars:
@@ -170,8 +175,13 @@ def plot_nparcomp(file_path, column_cond, column_values, column_replicate, compa
                     stars2 = 'ns'
                 plt.text(1, means.iloc[1]+(0.012/max(df.iloc[:, column_values])),
                          stars2, fontsize=20, ha='center', va='bottom')
-    
-    
+        
+        output_file = '/media/adminelson/NBCS-RDP/Analyses_people/Frederique/testoncmmonPC/stats.txt'   
+        sys.stdout = open(output_file, "w")       
+        summary_r(test_result)
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        
     else:#single frame one compiled file or unticked statbox just plot
         today = date.today()
         d1 = today.strftime("%d/%m/%Y")
