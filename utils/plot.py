@@ -9,7 +9,10 @@ with open('config.json', 'r') as file:
     config = json.load(file)
 #Image-J interface
 ij_path = config["ij_path"]
-
+today = date.today()
+d1 = today.strftime("%d/%m/%Y")
+test_result = None
+cld_result = None
 # R Interface Libraries
 os.environ['R_HOME'] = config["R_HOME"]
 os.environ['R_LIBS'] = config["R_LIBS"]
