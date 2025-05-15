@@ -470,7 +470,16 @@ def autoCorrectLabels(df):
         
         # Add dummy rows for missing labels
         for label in missing_labels:
-            df = df.append({'Frames': frame, 'label': label, 'centroid_x': np.nan, 'centroid_y': np.nan,"mean_intensity":np.nan}, ignore_index=True)
+            df = pd.concat([
+                df,
+                pd.DataFrame([{
+                    'Frames': frame,
+                    'label': label,
+                    'centroid_x': np.nan,
+                    'centroid_y': np.nan,
+                    "mean_intensity": np.nan
+                }])
+            ], ignore_index=True)
     df = df.sort_values(by=['label','Frames'])
     df = df.reset_index(drop=True)
     return df,ref
@@ -487,7 +496,16 @@ def applyLabelCorrectionToCytosol(ref,df):
         
         # Add dummy rows for missing labels
         for label in missing_labels:
-            df = df.append({'Frames': frame, 'label': label, 'centroid_x': np.nan, 'centroid_y': np.nan,"mean_intensity":np.nan}, ignore_index=True)
+            df = pd.concat([
+                df,
+                pd.DataFrame([{
+                    'Frames': frame,
+                    'label': label,
+                    'centroid_x': np.nan,
+                    'centroid_y': np.nan,
+                    "mean_intensity": np.nan
+                }])
+            ], ignore_index=True)
     df = df.sort_values(by=['label','Frames'])
     df = df.reset_index(drop=True)
     return df

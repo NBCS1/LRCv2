@@ -216,7 +216,7 @@ def launch_main_gui(name):
             [sg.Text("Select a folder containing your splitted channel files:", size=(65, 1))],
             [sg.Input(key="-FOLDER12-"), sg.FolderBrowse()],
             [sg.Text("Select the line you are analysing"), sg.Combo(
-                ["991", "604", "564"], default_value='991', readonly=True, key="erosion")],
+                ["991", "604", "564"], default_value='991', readonly=True, key="erosion2")],
             [sg.Multiline(size=(50, 10), key='-CONSOLE1-',
                           autoscroll=True, disabled=True)],
             [sg.Button("Run image processing Single frame"),

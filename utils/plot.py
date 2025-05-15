@@ -4,6 +4,7 @@ import sys
 import pandas as pd
 import json
 import os
+from io import StringIO
 with open('config.json', 'r') as file:
     config = json.load(file)
 #Image-J interface
@@ -11,12 +12,14 @@ ij_path = config["ij_path"]
 
 # R Interface Libraries
 os.environ['R_HOME'] = config["R_HOME"]
-os.environ["R_LIBS"] = config["R_LIBS"]
+os.environ['R_LIBS'] = config["R_LIBS"]
+'''
 import rpy2.rinterface as rinterface
 import rpy2.robjects as ro
 from rpy2.robjects.packages import importr
 from rpy2.robjects.conversion import localconverter
 from rpy2.robjects import pandas2ri, Formula
+'''
 def plot_nparcomp(file_path, column_cond, column_values, column_replicate, compare,statsbox,listfiles):
     """
     Conducts non-parametric statistical comparisons and visualizes the results using boxplots and swarmplots.
@@ -176,12 +179,20 @@ def plot_nparcomp(file_path, column_cond, column_values, column_replicate, compa
                 plt.text(1, means.iloc[1]+(0.012/max(df.iloc[:, column_values])),
                          stars2, fontsize=20, ha='center', va='bottom')
         
-        output_file = '/media/adminelson/NBCS-RDP/Analyses_people/Frederique/testoncmmonPC/stats.txt'   
-        sys.stdout = open(output_file, "w")       
-        summary_r(test_result)
-        sys.stdout.close()
-        sys.stdout = sys.__stdout__
+        # Redirect the standard output to a StringIO object
+        stdout_backup = sys.stdout
+        sys.stdout = StringIO()
         
+        # Your Python code goes here
+        # For example:
+        summary_r(test_result)
+        
+        # Get the console output from the StringIO object
+        console_output = sys.stdout.getvalue()
+        
+        # Restore the standard output
+        sys.stdout.close()
+        sys.stdout = stdout_backup
     else:#single frame one compiled file or unticked statbox just plot
         today = date.today()
         d1 = today.strftime("%d/%m/%Y")
@@ -201,7 +212,7 @@ def plot_nparcomp(file_path, column_cond, column_values, column_replicate, compa
         
     plt.close(fig)
     stat_export = True
-    return fig  # add object to rebuild stat report
+    return fig # add object to rebuild stat report
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -302,7 +313,6 @@ def plot_data_compiled(values,window):
         return compiled_df, plotcompiled
 
     else:  # single frame
-        print(compiled_df)
         fig = plot_nparcomp(file_path=compiled_df, column_cond=6, column_values=4,
                             column_replicate=1, compare='all',statsbox=values["statsbox"],listfiles=listfiles)  # create object to return
 
@@ -310,8 +320,8 @@ def plot_data_compiled(values,window):
             item.destroy()
         draw_figure(window['-CANVAS3-'].TKCanvas, fig)
         window.refresh()
-
-        return compiled_df, fig  # export object for full stat report
+        
+        return compiled_df, fig # export object for full stat report
 
 
 def plot_data_compiled_norm(values,window):
@@ -531,7 +541,6 @@ def plot_data_sf(df,window):
     sns.boxplot(y="Average ratios", ax=ax, data=df)  # Draw boxplot on the axes
     sns.stripplot(y="Average ratios", ax=ax, data=df, jitter=True,
                   color='orange')  # Draw stripplot on the axes
-    plot.fig.set_size_inches(4, 4) 
     for item in window['-CANVAS2-'].TKCanvas.pack_slaves():
         item.destroy()
 

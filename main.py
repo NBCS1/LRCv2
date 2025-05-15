@@ -5,6 +5,7 @@ The LRC software provide a graphical interface to test and then automatically
 segment Arabidopsis thaliana plasma membrane and cytosolic fluorescence signal.
 The software works with movies and single frames and assist the user in ROI
 selection.
+
 The software segments plasma membranes from a reference channel
     e.g.: Propidium iodide, lti6b-fluorophore
 And then measure the plasma membrane and cytosolic signal to calculate the
@@ -28,7 +29,6 @@ and main_window.py
 
 Progress bar during single frame and movie ROI selection
 
-Save nparcomp summary as text file
 
 --------------------------Bug to fix--------------------------
 
@@ -81,18 +81,13 @@ ij_path = config["ij_path"]
 
 # R Interface Libraries
 os.environ['R_HOME'] = config["R_HOME"]
-os.environ["R_LIBS"] = config["R_LIBS"]
+os.environ['R_LIBS'] = config["R_LIBS"]
 
 #option parameters
 params=config["parameters"]
 print(params)
 gpu=config["selected_gpu"]
 
-import rpy2.rinterface as rinterface
-import rpy2.robjects as ro
-from rpy2.robjects.packages import importr
-from rpy2.robjects.conversion import localconverter
-from rpy2.robjects import pandas2ri, Formula
 
 lrc_directory=os.getcwd()
 
@@ -113,7 +108,7 @@ from PyQt5.QtWidgets import QApplication
 
 app = QApplication(sys.argv) 
 # global env variables initialization (related to the single frames statistics)
-stat_export = False
+stat_export = True
 d1 = None
 test_result = None
 cld_result = None
@@ -270,11 +265,11 @@ def main(stat_export=stat_export):
             cle.select_device(gpu)#activate selected gpu
             
             #retrieve the erosion factor
-            if values["erosion"] == "564":
+            if values["erosion2"] == "564":
                 erosionfactor = 5
-            elif values["erosion"] == "991":
+            elif values["erosion2"] == "991":
                 erosionfactor = 1
-            elif values["erosion"] == "604":
+            elif values["erosion2"] == "604":
                 erosionfactor = 3
             
             #retrieve splitted image folder
